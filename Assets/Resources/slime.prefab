@@ -191,7 +191,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 7715241876941772291}
   maxHealth: 100
+  currentHealth: 0
   healthBar: {fileID: 1688634880571159540, guid: 9010eeb8a0a7443b0b9dd13605457218, type: 3}
+  healthBarChecker: {fileID: 3024593986556442171, guid: 23afebc03b3bd4a3dbd2d907c1d3a121, type: 3}
 --- !u!212 &4486674761032846597
 SpriteRenderer:
   m_ObjectHideFlags: 0

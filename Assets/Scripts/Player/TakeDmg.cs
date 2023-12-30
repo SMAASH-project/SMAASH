@@ -10,13 +10,27 @@ public class TakeDmg : MonoBehaviour
     public int maxHealth = 100;
     public int currentHealth;
     public HealthBar healthBar;
+    public HealthBarChecker healthBarChecker;
     // Start is called before the first frame update
     void Start()
     {
-        currentHealth = maxHealth;
-        healthBar = GameObject.Find("HealthBar").GetComponent<HealthBar>();
-        Debug.Log(healthBar);
-		healthBar.SetMaxHealth(maxHealth);
+
+        healthBarChecker = GameObject.Find("HealthBarChecker").GetComponent<HealthBarChecker>();
+        healthBarChecker.HealthBarCheck();
+        if(healthBarChecker.healthBarNum == 1)
+        {
+            currentHealth = maxHealth;
+            healthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
+            Debug.Log(healthBar);
+		    healthBar.SetMaxHealth(maxHealth);
+        }else if(healthBarChecker.healthBarNum == 2)
+        {
+            currentHealth = maxHealth;
+            healthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
+            Debug.Log(healthBar);
+		    healthBar.SetMaxHealth(maxHealth);
+        }
+
     }
     public void TakeDamage(int damage)
     {
