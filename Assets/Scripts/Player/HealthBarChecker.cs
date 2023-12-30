@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class HealthBarChecker : MonoBehaviour
 {
-    public int counter;
+    int counter;
     public int healthBarNum;
     
     // Start is called before the first frame update
