@@ -5,6 +5,8 @@ using Photon.Pun;
 
 public class TakeDmg : MonoBehaviour, IPunObservable
 {
+    PhotonView view;
+    
     public Animator animator;
 
     public int maxHealth = 100;
@@ -12,9 +14,13 @@ public class TakeDmg : MonoBehaviour, IPunObservable
     public HealthBar healthBar;
     public HealthBarChecker healthBarChecker;
 
+    int local_dmg;
+
     // Start is called before the first frame update
     void Start()
     {
+        view = GetComponent<PhotonView>();
+
         //Megkeresi a checkert es a script functionjet lefutatja
         healthBarChecker = GameObject.Find("HealthBarChecker").GetComponent<HealthBarChecker>();
         healthBarChecker.HealthBarCheck();
@@ -33,10 +39,25 @@ public class TakeDmg : MonoBehaviour, IPunObservable
         }
 
     }
-    //Megadott damaget levon
-    public void TakeDamage(int damage)
+
+    public void Update()
     {
-        currentHealth -= damage;
+        //healthBar.SetHealth(currentHealth);
+    }
+
+    public void TakeDamageCall(int damage)
+    {
+        local_dmg = damage;
+        Debug.Log("1");
+        view.RPC("TakeDamage", RpcTarget.All);
+    }
+
+    //Megadott damaget levon
+    [PunRPC]
+    public void TakeDamage()
+    {
+        Debug.Log("asd");
+        currentHealth -= local_dmg;
         healthBar.SetHealth(currentHealth);
 
         //Ha nincs eletero, akkor meghak
@@ -53,16 +74,18 @@ public class TakeDmg : MonoBehaviour, IPunObservable
         this.enabled = false;
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    public virtual void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if(stream.IsWriting)
         {
-            stream.SendNext(this.enabled);
+            //stream.SendNext(this.enabled);
             stream.SendNext(currentHealth);
+            //stream.SendNext(healthBar);
         }else if(stream.IsReading)
         {
-            this.enabled = (bool)stream.ReceiveNext();
+            //this.enabled = (bool)stream.ReceiveNext();
             currentHealth = (int)stream.ReceiveNext();
+            //this.healthBar = (HealthBar)stream.ReceiveNext();
         }
     }
 }
