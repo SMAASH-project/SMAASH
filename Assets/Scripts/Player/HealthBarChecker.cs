@@ -15,6 +15,7 @@ public class HealthBarChecker : MonoBehaviour
 
     public void HealthBarCheck()
     {
+        Debug.Log(counter);
         if(counter == 1)
         {
             healthBarNum = 1;

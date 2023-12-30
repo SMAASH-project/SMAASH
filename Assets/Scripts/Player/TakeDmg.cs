@@ -14,8 +14,6 @@ public class TakeDmg : MonoBehaviour, IPunObservable
     public HealthBar healthBar;
     public HealthBarChecker healthBarChecker;
 
-    int local_dmg;
-
     // Start is called before the first frame update
     void Start()
     {
@@ -24,6 +22,7 @@ public class TakeDmg : MonoBehaviour, IPunObservable
         //Megkeresi a checkert es a script functionjet lefutatja
         healthBarChecker = GameObject.Find("HealthBarChecker").GetComponent<HealthBarChecker>();
         healthBarChecker.HealthBarCheck();
+        Debug.Log(healthBarChecker.healthBarNum);
         
         //Megnezi hanyadikkent kell healthbart csatolni
         if(healthBarChecker.healthBarNum == 1)
@@ -31,7 +30,7 @@ public class TakeDmg : MonoBehaviour, IPunObservable
             currentHealth = maxHealth;
             healthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
 		    healthBar.SetMaxHealth(maxHealth);
-        }else if(healthBarChecker.healthBarNum == 2)
+        }else
         {
             currentHealth = maxHealth;
             healthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
@@ -45,19 +44,17 @@ public class TakeDmg : MonoBehaviour, IPunObservable
         //healthBar.SetHealth(currentHealth);
     }
 
-    public void TakeDamageCall(int damage)
+    public void TakeDamageCaller(int damage)
     {
-        local_dmg = damage;
-        Debug.Log("1");
-        view.RPC("TakeDamage", RpcTarget.All);
+        view.RPC("TakeDamage", RpcTarget.All, damage);
     }
 
     //Megadott damaget levon
     [PunRPC]
-    public void TakeDamage()
+    public void TakeDamage(int damage)
     {
         Debug.Log("asd");
-        currentHealth -= local_dmg;
+        currentHealth -= damage;
         healthBar.SetHealth(currentHealth);
 
         //Ha nincs eletero, akkor meghak
@@ -80,11 +77,13 @@ public class TakeDmg : MonoBehaviour, IPunObservable
         {
             //stream.SendNext(this.enabled);
             stream.SendNext(currentHealth);
+            Debug.Log("sajat jatekos elete: " + currentHealth);
             //stream.SendNext(healthBar);
         }else if(stream.IsReading)
         {
             //this.enabled = (bool)stream.ReceiveNext();
             currentHealth = (int)stream.ReceiveNext();
+            Debug.Log("masik jatekos elete: " + currentHealth);
             //this.healthBar = (HealthBar)stream.ReceiveNext();
         }
     }
