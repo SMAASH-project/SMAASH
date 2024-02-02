@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
 
-public class TakeDmg : MonoBehaviour, IPunObservable
+public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
 {
     PhotonView view;
     
@@ -11,20 +12,33 @@ public class TakeDmg : MonoBehaviour, IPunObservable
 
     public int maxHealth = 100;
     public int currentHealth;
-    public HealthBar healthBar;
-    public HealthBarChecker healthBarChecker;
+    public int enemyHealth;
+    public HealthBar myHealthBar;
+    public HealthBar enemyHealthBar;
+    public int playerCount;
+    //public HealthBarChecker healthBarChecker;
 
     // Start is called before the first frame update
     void Start()
     {
         view = GetComponent<PhotonView>();
 
+        currentHealth = maxHealth;
+        myHealthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
+		myHealthBar.SetMaxHealth(maxHealth);
+
+        enemyHealth = maxHealth;
+        enemyHealthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
+		enemyHealthBar.SetMaxHealth(maxHealth);
+
         //Megkeresi a checkert es a script functionjet lefutatja
-        healthBarChecker = GameObject.Find("HealthBarChecker").GetComponent<HealthBarChecker>();
-        healthBarChecker.HealthBarCheck();
-        Debug.Log(healthBarChecker.healthBarNum);
+        
+        //healthBarChecker = GameObject.Find("HealthBarChecker").GetComponent<HealthBarChecker>();
+        //healthBarChecker.HealthBarCheck();
+        //Debug.Log(healthBarChecker.healthBarNum);
         
         //Megnezi hanyadikkent kell healthbart csatolni
+        /*
         if(healthBarChecker.healthBarNum == 1)
         {
             currentHealth = maxHealth;
@@ -36,12 +50,24 @@ public class TakeDmg : MonoBehaviour, IPunObservable
             healthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
 		    healthBar.SetMaxHealth(maxHealth);
         }
+        
 
-    }
+        healthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
+        if(healthBar.isTaken == false)
+        {
+            currentHealth = maxHealth;
+		    healthBar.SetMaxHealth(maxHealth);
+        }else
+        {
+            currentHealth = maxHealth;
+            healthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
+		    healthBar.SetMaxHealth(maxHealth);
+        }
 
-    public void Update()
-    {
-        //healthBar.SetHealth(currentHealth);
+        */
+
+        
+
     }
 
     public void TakeDamageCaller(int damage)
@@ -55,7 +81,7 @@ public class TakeDmg : MonoBehaviour, IPunObservable
     {
         Debug.Log("asd");
         currentHealth -= damage;
-        healthBar.SetHealth(currentHealth);
+        myHealthBar.SetHealth(currentHealth);
 
         //Ha nincs eletero, akkor meghak
         if(currentHealth <= 0)
@@ -82,9 +108,30 @@ public class TakeDmg : MonoBehaviour, IPunObservable
         }else if(stream.IsReading)
         {
             //this.enabled = (bool)stream.ReceiveNext();
-            currentHealth = (int)stream.ReceiveNext();
+            //currentHealth = (int)stream.ReceiveNext();
+            enemyHealth = (int)stream.ReceiveNext();
             Debug.Log("masik jatekos elete: " + currentHealth);
             //this.healthBar = (HealthBar)stream.ReceiveNext();
         }
+    }
+
+    public override void OnJoinedRoom()
+    {
+        view.RPC("UpdatePlayerCount", RpcTarget.All, true);
+    }
+
+    public override void OnLeftRoom()
+    {
+        view.RPC("UpdatePlayerCount", RpcTarget.All, false);
+    }
+
+    [PunRPC]
+    void UpdatePlayerCount(bool AddToCount){
+    if (AddToCount){
+        playerCount += 1;
+    }
+    else{
+        playerCount -= 1;
+    }
     }
 }
