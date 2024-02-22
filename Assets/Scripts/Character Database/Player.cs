@@ -39,7 +39,7 @@ public class Player : MonoBehaviour
     {
         selectedOption = PlayerPrefs.GetInt("selectedOption");
         Vector2 randomPosition = new Vector2(Random.Range(minX, maxX), Random.Range(minY, maxY));
-        PhotonNetwork.Instantiate(playerPrefabs[selectedOption].name, new Vector2(0f, 1f), Quaternion.identity);
+        PhotonNetwork.Instantiate(playerPrefabs[selectedOption].name, new Vector2(0f, -3.9f), Quaternion.identity);
     }
 
 }
