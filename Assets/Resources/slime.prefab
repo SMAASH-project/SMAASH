@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3853280999163101564}
   - component: {fileID: 3902745146278670053}
   - component: {fileID: 1550625282838295639}
-  m_Layer: 7
+  m_Layer: 3
   m_Name: cam
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -115,7 +115,7 @@ GameObject:
   - component: {fileID: -2769776375907694527}
   - component: {fileID: -7457931286131025161}
   - component: {fileID: 9175846915309582073}
-  m_Layer: 7
+  m_Layer: 3
   m_Name: slime
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -616,7 +616,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 768120399513916215}
-  m_Layer: 7
+  m_Layer: 3
   m_Name: groundCheck_slime
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -678,7 +678,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2921800509440567192}
-  m_Layer: 7
+  m_Layer: 3
   m_Name: ceilingCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
