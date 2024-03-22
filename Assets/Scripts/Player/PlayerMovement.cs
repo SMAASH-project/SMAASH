@@ -24,6 +24,7 @@ public class PlayerMovement : MonoBehaviour
     private int extraJumps;
     private int extraJumpValue = 2;
 
+
     void Start()
     {
         isDead = false;
