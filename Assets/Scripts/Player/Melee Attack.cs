@@ -8,6 +8,7 @@ public class MeleeAttack : MonoBehaviour
     PhotonView view;
 
     public Animator animator;
+    private float horizontal;
 
     //public Animator attack_anim;
     public GameObject attackBtn;
@@ -35,6 +36,33 @@ public class MeleeAttack : MonoBehaviour
         view = GetComponent<PhotonView>(); 
 
     }
+
+/*
+    public void Update()
+    {
+        if(view.IsMine)
+        {
+            if (this.enabled == true && horizontal > 0f)
+            {
+                //spriteRenderer.flipX = false;
+                //attackPoint.transform.position = new UnityEngine.Vector2(this.transform.position.x + 1f, this.transform.position.y);
+                
+                //view.RPC("OnDirectionChange_RIGHT", RpcTarget.Others);
+
+                //attackVector = attackPoint;
+            }
+            else if (this.enabled == true && horizontal < 0f)
+            {
+                //spriteRenderer.flipX = true;
+                //attackPoint.transform.position = new UnityEngine.Vector2(this.transform.position.x - 1f, this.transform.position.y);
+                //view.RPC("OnDirectionChange_LEFT", RpcTarget.Others);
+
+                attackVector = attackPointOpposite;
+            }
+        }
+    }
+
+    */
 
     private void Awake()
     {

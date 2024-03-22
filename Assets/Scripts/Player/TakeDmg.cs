@@ -10,7 +10,7 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     
     public Animator animator;
 
-    public int maxHealth = 100;
+    public int maxHealth = 50;
     public int currentHealth;
     public int enemyHealth;
     public HealthBar myHealthBar;
@@ -79,7 +79,7 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     public void TakeDamage(int damage)
     {
-        Debug.Log("asd");
+        Debug.Log("utes!");
         currentHealth -= damage;
         myHealthBar.SetHealth(currentHealth);
 
@@ -103,14 +103,14 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
         {
             //stream.SendNext(this.enabled);
             stream.SendNext(currentHealth);
-            Debug.Log("sajat jatekos elete: " + currentHealth);
+            //Debug.Log("sajat jatekos elete: " + currentHealth);
             //stream.SendNext(healthBar);
         }else if(stream.IsReading)
         {
             //this.enabled = (bool)stream.ReceiveNext();
             //currentHealth = (int)stream.ReceiveNext();
             enemyHealth = (int)stream.ReceiveNext();
-            Debug.Log("masik jatekos elete: " + currentHealth);
+            //Debug.Log("masik jatekos elete: " + currentHealth);
             //this.healthBar = (HealthBar)stream.ReceiveNext();
         }
     }

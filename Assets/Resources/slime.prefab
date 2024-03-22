@@ -616,7 +616,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 768120399513916215}
-  m_Layer: 3
+  m_Layer: 7
   m_Name: groundCheck_slime
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -678,7 +678,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2921800509440567192}
-  m_Layer: 3
+  m_Layer: 7
   m_Name: ceilingCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
