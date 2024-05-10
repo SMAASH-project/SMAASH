@@ -103,6 +103,8 @@ public class PlayerMovement : MonoBehaviour
         //attackPoint.transform.position = new Vector2(this.transform.position.x + 1f, this.transform.position.y);
     }  
 
+    */
+
     public void Jump(InputAction.CallbackContext context)
     {
         if(view.IsMine && isDead == false)
@@ -128,4 +130,6 @@ public class PlayerMovement : MonoBehaviour
     {
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer); 
     }
+
+    */
 }
