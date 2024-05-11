@@ -103,7 +103,6 @@ public class PlayerMovement : MonoBehaviour
         //attackPoint.transform.position = new Vector2(this.transform.position.x + 1f, this.transform.position.y);
     }  
 
-    */
 
     public void Jump(InputAction.CallbackContext context)
     {
