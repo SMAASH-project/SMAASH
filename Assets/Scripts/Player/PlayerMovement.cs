@@ -31,8 +31,6 @@ public class PlayerMovement : MonoBehaviour
         extraJumps = extraJumpValue;
         joystick = GameObject.Find("Floating Joystick").GetComponent<Joystick>();
         view = GetComponent<PhotonView>();
-
-        //Camera.main.GetComponent<CameraMotion>().setTarget(gameObject.transform);
     }
 
     void FixedUpdate()
@@ -102,7 +100,6 @@ public class PlayerMovement : MonoBehaviour
         spriteRenderer.flipX = false;
         //attackPoint.transform.position = new Vector2(this.transform.position.x + 1f, this.transform.position.y);
     }  
-
 
     public void Jump(InputAction.CallbackContext context)
     {
