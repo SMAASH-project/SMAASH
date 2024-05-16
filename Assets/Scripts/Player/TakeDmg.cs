@@ -14,6 +14,7 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     public HealthBar enemyHealthBar;
     public int playerCount;
 
+
     // Start is called before the first frame update
     void Start()
     {
@@ -44,9 +45,10 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
         //Ha nincs eletero, akkor meghak
         if(currentHealth <= 0)
         {
-            Die();
+             Die();
         }
     }
+
 
     //Halal animacio
     void Die()
