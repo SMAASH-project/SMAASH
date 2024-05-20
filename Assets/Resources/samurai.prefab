@@ -242,7 +242,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   attackPoint: {fileID: 4201173200840889267}
-  attackPointOpposite: {fileID: 0}
+  attackPointOpposite: {fileID: 6219068632712976481}
   animator: {fileID: 497933689935421191}
   joystick: {fileID: 6100916008954871472, guid: 0d230cc8be529a542a08cb878ab14b18, type: 3}
   spriteRenderer: {fileID: 5567647222599282870}
