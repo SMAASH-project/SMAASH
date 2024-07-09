@@ -8,16 +8,19 @@ public class AttackCooldown : MonoBehaviour
 
     public Animator attack_anim;
     public Button attack_btn;
+    public MeleeAttack meleeAttack;
 
-    bool canAttack = true;
     // Start is called before the first frame update
     void Start(){
-        attack_anim.SetBool("AttackCooldown", true);
+        attack_anim.SetBool("AttackCooldown", false);
+        attack_btn.interactable = true;
+        meleeAttack = new MeleeAttack();
     }
     
     void Awake()
     {
         attack_btn.onClick.AddListener(Button_pressed);
+        
     }
 
 
@@ -25,12 +28,16 @@ public class AttackCooldown : MonoBehaviour
     void Button_pressed(){
         attack_anim.SetBool("AttackCooldown", true);
         StartCoroutine(AttackCooldownStart());
-        attack_anim.SetBool("AttackCooldown", false);
+    
     }
     IEnumerator AttackCooldownStart(){
-      Debug.Log("1 sec");
       attack_anim.SetBool("AttackCooldown", true);
+      //meleeAttack.canAttack = false;
+      attack_btn.interactable = false;
       yield return new WaitForSeconds(1);
+      Debug.Log("1 sec");
+      //meleeAttack.canAttack = true;
+      attack_btn.interactable = true;
       attack_anim.SetBool("AttackCooldown", false);
     }
 }
