@@ -28,9 +28,7 @@ public class AttackCooldown : MonoBehaviour
     IEnumerator AttackCooldownStart(){
       attack_anim.SetTrigger("AttackCooldown");
       attack_btn.interactable = false;
-      yield return new WaitForSecondsRealtime(1);
-      Debug.Log("1 sec");
+      yield return new WaitForSecondsRealtime(1.1f);
       attack_btn.interactable = true;
-      //attack_anim.SetBool("AttackCooldown", false);
     }
 }
