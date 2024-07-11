@@ -5,30 +5,39 @@ using UnityEngine.UI;
 
 public class AttackCooldown : MonoBehaviour
 {
+
     public Animator attack_anim;
     public Button attack_btn;
-    //public MeleeAttack meleeAttack;
+    public MeleeAttack meleeAttack;
 
     // Start is called before the first frame update
     void Start(){
+        attack_anim.SetBool("AttackCooldown", false);
         attack_btn.interactable = true;
-        //meleeAttack = new MeleeAttack();
-        //attack_anim.SetTrigger("AttackCooldown");
+        meleeAttack = new MeleeAttack();
     }
     
     void Awake()
     {
         attack_btn.onClick.AddListener(Button_pressed);
+        
     }
+
+
 
     void Button_pressed(){
+        attack_anim.SetBool("AttackCooldown", true);
         StartCoroutine(AttackCooldownStart());
+    
     }
-
     IEnumerator AttackCooldownStart(){
-      attack_anim.SetTrigger("AttackCooldown");
+      attack_anim.SetBool("AttackCooldown", true);
+      //meleeAttack.canAttack = false;
       attack_btn.interactable = false;
-      yield return new WaitForSecondsRealtime(1.1f);
+      yield return new WaitForSeconds(1);
+      Debug.Log("1 sec");
+      //meleeAttack.canAttack = true;
       attack_btn.interactable = true;
+      attack_anim.SetBool("AttackCooldown", false);
     }
 }
