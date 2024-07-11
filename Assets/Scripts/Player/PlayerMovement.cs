@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Photon.Pun;
-using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -17,7 +16,6 @@ public class PlayerMovement : MonoBehaviour
 
     public Animator animator;
     public Joystick joystick;
-    //public Button jump_btn;
     public SpriteRenderer spriteRenderer;
 
     private float horizontal;
@@ -117,20 +115,16 @@ public class PlayerMovement : MonoBehaviour
             if(IsGrounded())
             {
                 extraJumps = extraJumpValue;
-                //doubleJump.isDouble = false;
             }
 
             if(context.performed && extraJumps > 0)
             {
                 rb.velocity = Vector2.up * jumpingPower;
-                //doubleJump.isDouble = true;
-                //ump_btn.GetComponent<DoubleJump>().StartDoubleJump();
                 extraJumps--;
             }
             else if(context.performed && extraJumps == 0 && IsGrounded())
             {
                 rb.velocity = Vector2.up * jumpingPower;
-                //doubleJump.isDouble = false;
             }
         }
     }

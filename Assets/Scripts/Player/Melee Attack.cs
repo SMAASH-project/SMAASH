@@ -68,9 +68,10 @@ public class MeleeAttack : MonoBehaviour
     {
         if(this.enabled == true && context.performed && view.IsMine && canAttack == true)
         {
+            animator.SetTrigger("Attack1");
 
             StartCoroutine(AttackCooldownStart2());
-            animator.SetTrigger("Attack1");
+
             //Valtozoba tarolja azt a collidert (masik jatekost), ami a koron belul van
             if(spriteRenderer.flipX == true){
                 Collider2D hitEnemyOpposite = Physics2D.OverlapCircle(attackPointOpposite.position, attackRange, enemyLayer);

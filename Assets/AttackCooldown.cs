@@ -34,10 +34,8 @@ public class AttackCooldown : MonoBehaviour
       attack_anim.SetBool("AttackCooldown", true);
       //meleeAttack.canAttack = false;
       attack_btn.interactable = false;
-      yield return new WaitForSeconds(1);
+      yield return new WaitForSecondsRealtime(1);
       Debug.Log("1 sec");
-      //meleeAttack.canAttack = true;
       attack_btn.interactable = true;
-      attack_anim.SetBool("AttackCooldown", false);
     }
 }
