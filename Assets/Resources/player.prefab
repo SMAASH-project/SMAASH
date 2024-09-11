@@ -259,6 +259,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 497933689935421191}
+  attackBtn: {fileID: 0}
   attackPoint: {fileID: 3735998398671886529}
   attackPointOpposite: {fileID: 1199901176270294408}
   attackRange: 1.04
