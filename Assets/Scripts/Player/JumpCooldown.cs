@@ -25,7 +25,6 @@ using UnityEngine.UI;
 
      IEnumerator JumpCooldownStart(){
        jump_anim.SetTrigger("isJumping");
-       Debug.Log("jump");
        jump_btn.interactable = false;
        yield return new WaitForSecondsRealtime(.5f);
        jump_btn.interactable = true;
