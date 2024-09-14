@@ -9,18 +9,12 @@ public class MeleeAttack : MonoBehaviour
 
     public Animator animator;
 
-    //public Animator attack_anim;
-    public GameObject attackBtn;
-
     public Transform attackPoint;
     public Transform attackPointOpposite;
     public float attackRange = 1f;
     public LayerMask enemyLayer;
     public SpriteRenderer spriteRenderer;
     
-    public int attackDamage = 40;
-    public int attackNum;
-
     private InputActionAsset inputAsset;
     private InputActionMap player;
     
@@ -31,7 +25,6 @@ public class MeleeAttack : MonoBehaviour
 
     public void Start()
     {
-        attackNum = 1;
         view = GetComponent<PhotonView>(); 
 
     }

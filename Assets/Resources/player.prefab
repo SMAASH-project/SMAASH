@@ -241,8 +241,6 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
-  attackPoint: {fileID: 4201173200840889267}
-  attackPointOpposite: {fileID: 0}
   animator: {fileID: 497933689935421191}
   joystick: {fileID: 6100916008954871472, guid: 0d230cc8be529a542a08cb878ab14b18, type: 3}
   spriteRenderer: {fileID: 5567647222599282870}
@@ -259,16 +257,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 497933689935421191}
-  attackBtn: {fileID: 0}
   attackPoint: {fileID: 3735998398671886529}
   attackPointOpposite: {fileID: 1199901176270294408}
   attackRange: 1.04
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 136
   spriteRenderer: {fileID: 5567647222599282870}
-  attackDamage: 40
-  attackNum: 0
   canAttack: 1
   isDead: 0
 --- !u!212 &5567647222599282870

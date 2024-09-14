@@ -14,6 +14,8 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     public HealthBar enemyHealthBar;
     public int playerCount;
 
+    PlayerMovement playerMovement;
+
 
     // Start is called before the first frame update
     void Start()
@@ -27,6 +29,8 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
         enemyHealth = maxHealth;
         enemyHealthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
 		enemyHealthBar.SetMaxHealth(maxHealth);
+
+        playerMovement = gameObject.GetComponent<PlayerMovement>();
     }
 
     public void TakeDamageCaller(int damage)
@@ -38,26 +42,27 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     public void TakeDamage(int damage)
     {
-        Debug.Log("utes!");
         currentHealth -= damage;
         myHealthBar.SetHealth(currentHealth);
 
         //Ha nincs eletero, akkor meghak
         if(currentHealth <= 0)
         {
-             Die();
+            //Die();
+            playerMovement.Die();
         }
     }
 
-
+/*
     //Halal animacio
     void Die()
     {
         this.enabled = false;
         animator.SetBool("isDead", true);
     }
+*/
 
-    public virtual void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if(stream.IsWriting)
         {
@@ -67,7 +72,7 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
             enemyHealth = (int)stream.ReceiveNext();
         }
     }
-
+/*
     public override void OnJoinedRoom()
     {
         view.RPC("UpdatePlayerCount", RpcTarget.All, true);
@@ -87,4 +92,5 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
         playerCount -= 1;
     }
     }
+    */
 }
