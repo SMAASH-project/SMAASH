@@ -91,7 +91,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 594775529136307252}
-  m_Enabled: 0
+  m_Enabled: 1
 --- !u!1 &4021654725828388503
 GameObject:
   m_ObjectHideFlags: 0
@@ -172,6 +172,8 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  attackPoint: {fileID: 8064911762334722304}
+  attackPointOpposite: {fileID: 0}
   animator: {fileID: 7715241876941772291}
   joystick: {fileID: 6100916008954871472, guid: 0d230cc8be529a542a08cb878ab14b18, type: 3}
   spriteRenderer: {fileID: 4486674761032846597}
