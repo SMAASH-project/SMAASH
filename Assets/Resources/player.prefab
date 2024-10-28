@@ -153,7 +153,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5065520332805221432}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!1 &5096639677504068731
 GameObject:
   m_ObjectHideFlags: 0
@@ -177,6 +177,7 @@ GameObject:
   - component: {fileID: 1722907815526246828}
   - component: {fileID: 6792817095593775094}
   - component: {fileID: -9156093716600337247}
+  - component: {fileID: -77606782996139011}
   m_Layer: 3
   m_Name: player
   m_TagString: Player
@@ -265,7 +266,7 @@ MonoBehaviour:
   attackRange: 1.04
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 136
   spriteRenderer: {fileID: 5567647222599282870}
   attackDamage: 40
   attackNum: 0
@@ -694,6 +695,20 @@ MonoBehaviour:
     InterpolateOption: 0
     InterpolateMoveTowardsSpeed: 1
     InterpolateLerpSpeed: 0
+--- !u!114 &-77606782996139011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5096639677504068731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2714f43421e34ffe9f11b84a75448f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthBar: {fileID: 0}
+  maxHealth: 100
 --- !u!1 &5818609464253182864
 GameObject:
   m_ObjectHideFlags: 0

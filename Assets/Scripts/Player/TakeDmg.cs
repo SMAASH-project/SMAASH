@@ -13,6 +13,7 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     public HealthBar myHealthBar;
     public HealthBar enemyHealthBar;
     public int playerCount;
+    
 
 
     // Start is called before the first frame update
@@ -20,13 +21,25 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     {
         view = GetComponent<PhotonView>();
 
-        currentHealth = maxHealth;
-        myHealthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
-		myHealthBar.SetMaxHealth(maxHealth);
+        
+        if(PhotonNetwork.CurrentRoom.PlayerCount == 1){
+            currentHealth = maxHealth;
+            myHealthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
+		    myHealthBar.SetMaxHealth(maxHealth);
 
-        enemyHealth = maxHealth;
-        enemyHealthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
-		enemyHealthBar.SetMaxHealth(maxHealth);
+            enemyHealth = maxHealth;
+            enemyHealthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
+		    enemyHealthBar.SetMaxHealth(maxHealth);
+        }else if(PhotonNetwork.CurrentRoom.PlayerCount == 2){
+            currentHealth = maxHealth;
+            myHealthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
+		    myHealthBar.SetMaxHealth(maxHealth);
+
+            enemyHealth = maxHealth;
+            enemyHealthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
+		    enemyHealthBar.SetMaxHealth(maxHealth);
+        }
+        
     }
 
     public void TakeDamageCaller(int damage)
@@ -38,15 +51,25 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     public void TakeDamage(int damage)
     {
-        Debug.Log("utes!");
-        currentHealth -= damage;
-        myHealthBar.SetHealth(currentHealth);
+        if(view.IsMine){
+            currentHealth -= damage;
+            myHealthBar.SetHealth(currentHealth);
 
+            enemyHealthBar.SetHealth(enemyHealth);
+        }else{
+            enemyHealth -= damage;
+            enemyHealthBar.SetHealth(enemyHealth);
+
+            myHealthBar.SetHealth(currentHealth);
+        }
         //Ha nincs eletero, akkor meghak
         if(currentHealth <= 0)
         {
              Die();
         }
+
+        Debug.Log("my health: " + currentHealth);
+        Debug.Log("enemy health: " + enemyHealth);
     }
 
 
@@ -57,34 +80,19 @@ public class TakeDmg : MonoBehaviourPunCallbacks, IPunObservable
         animator.SetBool("isDead", true);
     }
 
+
     public virtual void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if(stream.IsWriting)
         {
-            stream.SendNext(currentHealth);
+            //stream.SendNext(currentHealth);
+            stream.SendNext(enemyHealth);
         }else if(stream.IsReading)
         {
-            enemyHealth = (int)stream.ReceiveNext();
+            currentHealth = (int)stream.ReceiveNext();
+            //enemyHealth = (int)stream.ReceiveNext();
         }
     }
-
-    public override void OnJoinedRoom()
-    {
-        view.RPC("UpdatePlayerCount", RpcTarget.All, true);
-    }
-
-    public override void OnLeftRoom()
-    {
-        view.RPC("UpdatePlayerCount", RpcTarget.All, false);
-    }
-
-    [PunRPC]
-    void UpdatePlayerCount(bool AddToCount){
-    if (AddToCount){
-        playerCount += 1;
-    }
-    else{
-        playerCount -= 1;
-    }
-    }
+    
+    
 }

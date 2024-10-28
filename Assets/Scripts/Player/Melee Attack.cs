@@ -97,7 +97,6 @@ public class MeleeAttack : MonoBehaviour
     IEnumerator AttackCooldownStart2(){
         canAttack = false;
         yield return new WaitForSeconds(1);
-        Debug.Log("1 sec 2");
         canAttack = true;
     }
 
