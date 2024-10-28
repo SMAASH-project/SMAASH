@@ -103,7 +103,6 @@ GameObject:
   - component: {fileID: 9056659282146628016}
   - component: {fileID: 8691144834461129292}
   - component: {fileID: 5571808162296724515}
-  - component: {fileID: 774978648398651752}
   - component: {fileID: 4486674761032846597}
   - component: {fileID: 3406070750220720866}
   - component: {fileID: 4239316512839801682}
@@ -177,25 +176,6 @@ MonoBehaviour:
   animator: {fileID: 7715241876941772291}
   joystick: {fileID: 6100916008954871472, guid: 0d230cc8be529a542a08cb878ab14b18, type: 3}
   spriteRenderer: {fileID: 4486674761032846597}
---- !u!114 &774978648398651752
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4021654725828388503}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4b1a9c12261045f991e665556e422e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  animator: {fileID: 7715241876941772291}
-  maxHealth: 100
-  currentHealth: 0
-  enemyHealth: 0
-  myHealthBar: {fileID: 0}
-  enemyHealthBar: {fileID: 0}
-  playerCount: 0
 --- !u!212 &4486674761032846597
 SpriteRenderer:
   m_ObjectHideFlags: 0
