@@ -66,7 +66,7 @@ public class MeleeAttack : MonoBehaviour
     [PunRPC]
     public void Attack(InputAction.CallbackContext context)
     {
-        if(this.enabled == true && context.performed && view.IsMine && canAttack == true && isDead == false)
+        if(this.enabled == true && context.performed && view.IsMine && canAttack == true)
         {
             animator.SetTrigger("Attack1");
 
