@@ -35,7 +35,7 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        if(view.IsMine){
+        if(view.IsMine && isDead == false){
             horizontalMove();
             flipCharacter();
             checkJumpAnimation();
