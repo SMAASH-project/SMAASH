@@ -77,6 +77,11 @@ public class PlayerHealth : MonoBehaviourPunCallbacks
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Player"), true);
     }
 
+    [PunRPC]
+    void IgnoreCollision(){
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Player"), true);
+    }
+
     // Ezt a funkciót a többiek healthbarjának frissítéséhez használjuk
     [PunRPC]
     void UpdateHealth(int updatedHealth)
