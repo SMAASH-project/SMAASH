@@ -39,16 +39,9 @@ public class PlayerMovement : MonoBehaviour
             horizontalMove();
             flipCharacter();
             checkJumpAnimation();
-            //updateAttackPoints();
         }
     }
 
-/*
-    void updateAttackPoints(){
-        //attackPointPosition = new Vector2(attackPoint.transform.position.x, attackPoint.transform.position.y);
-        //attackPointPositionOpposite = new Vector2(attackPoint.transform.position.x * -1, attackPoint.transform.position.y);
-    }
-*/
     void horizontalMove(){
         
         if(joystick.Horizontal >= .2f)
