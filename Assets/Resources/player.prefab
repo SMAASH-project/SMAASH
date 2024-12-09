@@ -660,7 +660,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   yOffset: 3.8
-  zOffset: -2
+  zOffset: 0
 --- !u!114 &-9156093716600337247
 MonoBehaviour:
   m_ObjectHideFlags: 0
