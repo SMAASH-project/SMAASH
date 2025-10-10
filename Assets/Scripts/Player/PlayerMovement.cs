@@ -22,7 +22,6 @@ public class PlayerMovement : MonoBehaviour
     public int extraJumpValue = 2;
 
     private Vector2 moveInput;
-    private bool isJumpPressed;
     private bool isGrounded;
     private int extraJumps;
     public bool isDead;
@@ -44,7 +43,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (view.IsMine && !isDead)
         {
-            MovePlayer();
             FlipCharacter();
             UpdateAnimations();
         }
@@ -53,8 +51,12 @@ public class PlayerMovement : MonoBehaviour
     // Called automatically by new Input System when Move action is triggered
     public void OnMove(InputAction.CallbackContext context)
     {
-         // Ignore input if window not focused
         moveInput = context.ReadValue<Vector2>();
+
+        float horizontal = moveInput.x * speed;
+        rb.velocity = new Vector2(horizontal, rb.velocity.y);
+        animator.SetFloat("speed", Math.Abs(horizontal));
+        
     }
 
     // Called automatically by new Input System when Jump action is triggered
@@ -62,8 +64,13 @@ public class PlayerMovement : MonoBehaviour
     {
         if (view.IsMine && !isDead)
         {
-            if (IsGrounded()) extraJumps = extraJumpValue;
 
+            Debug.Log("Jump action triggered"); 
+            if (IsGrounded())
+            {
+                extraJumps = extraJumpValue;
+            }
+            
             if (context.performed && extraJumps > 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
@@ -74,13 +81,6 @@ public class PlayerMovement : MonoBehaviour
                 rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
             }
         }
-    }
-
-    void MovePlayer()
-    {
-        float horizontal = moveInput.x * speed;
-        rb.velocity = new Vector2(horizontal, rb.velocity.y);
-        animator.SetFloat("speed", Math.Abs(horizontal));
     }
 
     void FlipCharacter()
