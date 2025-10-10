@@ -66,39 +66,57 @@ public class MeleeAttack : MonoBehaviour
     [PunRPC]
     public void Attack(InputAction.CallbackContext context)
     {
-        if(this.enabled == true && context.performed && view.IsMine && canAttack == true)
+        if (this.enabled == true && context.performed && view.IsMine && canAttack == true)
         {
+            
             animator.SetTrigger("Attack1");
 
             StartCoroutine(AttackCooldownStart2());
 
             //Valtozoba tarolja azt a collidert (masik jatekost), ami a koron belul van
-            if(spriteRenderer.flipX == true){
+            if (spriteRenderer.flipX == true)
+            {
                 Collider2D hitEnemyOpposite = Physics2D.OverlapCircle(attackPointOpposite.position, attackRange, enemyLayer);
                 PhotonView targetPhotonView = hitEnemyOpposite.GetComponent<PhotonView>();
-                if(targetPhotonView != null){
+                if (targetPhotonView != null)
+                {
                     hitEnemyOpposite.GetComponent<PlayerHealth>().TakeDamageCaller(damage);
                 }
                 //hitEnemyOpposite.GetComponent<TakeDmg>().TakeDamageCaller(damage);
 
-            }else if(spriteRenderer.flipX == false){
+            }
+            else if (spriteRenderer.flipX == false)
+            {
                 Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
                 PhotonView targetPhotonView = hitEnemy.GetComponent<PhotonView>();
-                if(targetPhotonView != null){
+                if (targetPhotonView != null)
+                {
                     hitEnemy.GetComponent<PlayerHealth>().TakeDamageCaller(damage);
                 }
                 //hitEnemy.GetComponent<TakeDmg>().TakeDamageCaller(damage);
             }
+
+            
         }
     }
 
     
 
     IEnumerator AttackCooldownStart2(){
-        canAttack = false;
-        yield return new WaitForSeconds(1);
+        // Wait a small frame so Animator actually transitions into the attack state
+        yield return null;
+
+        // Get current animation clip length
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        float clipLength = stateInfo.length;
+
+        // Wait for it to finish
+        yield return new WaitForSeconds(clipLength);
+
+        // Now you can run post-attack logic (e.g. enabling next actions)
         canAttack = true;
     }
+
 
 
     //Lerajzolja a kort a jobb lathatosagert az editorban
