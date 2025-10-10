@@ -32,11 +32,6 @@ public class PlayerMovement : MonoBehaviour
         view = GetComponent<PhotonView>();
         isDead = false;
         extraJumps = extraJumpValue;
-
-        // For WebGL: detect focus
-        //Application.focusChanged += OnAppFocusChanged;
-
-        Debug.Log(">>> PlayerMovement START - New Input Version <<<");
     }
 
     void FixedUpdate()
@@ -63,9 +58,7 @@ public class PlayerMovement : MonoBehaviour
     public void OnJump(InputAction.CallbackContext context)
     {
         if (view.IsMine && !isDead)
-        {
-
-            Debug.Log("Jump action triggered"); 
+        { 
             if (IsGrounded())
             {
                 extraJumps = extraJumpValue;
