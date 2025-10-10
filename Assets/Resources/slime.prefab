@@ -152,6 +152,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2714f43421e34ffe9f11b84a75448f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  animator: {fileID: 0}
+  playerMovement: {fileID: 0}
+  meleeAttack: {fileID: 0}
+  buttonCooldowns: {fileID: 0}
+  isDead: 0
   healthBar: {fileID: 0}
   maxHealth: 100
 --- !u!114 &5571808162296724515
@@ -167,15 +172,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 4239316512839801682}
+  animator: {fileID: 7715241876941772291}
+  spriteRenderer: {fileID: 4486674761032846597}
   groundCheck: {fileID: 768120399513916215}
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
   attackPoint: {fileID: 8064911762334722304}
   attackPointOpposite: {fileID: 0}
-  animator: {fileID: 7715241876941772291}
-  joystick: {fileID: 6100916008954871472, guid: 0d230cc8be529a542a08cb878ab14b18, type: 3}
-  spriteRenderer: {fileID: 4486674761032846597}
+  speed: 8
+  jumpingPower: 10
+  extraJumpValue: 2
+  isDead: 0
 --- !u!212 &4486674761032846597
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -364,7 +372,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 5571808162296724515}
         m_TargetAssemblyTypeName: PlayerMovement, Assembly-CSharp
-        m_MethodName: Move
+        m_MethodName: OnMove
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -384,7 +392,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 5571808162296724515}
         m_TargetAssemblyTypeName: PlayerMovement, Assembly-CSharp
-        m_MethodName: Jump
+        m_MethodName: OnJump
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -453,7 +461,7 @@ MonoBehaviour:
     m_ActionId: 63f41480-bf33-46a7-a869-2f69cc8b39d0
     m_ActionName: Player/Attack[/Keyboard/a]
   m_NeverAutoSwitchControlSchemes: 1
-  m_DefaultControlScheme: Gamepad
+  m_DefaultControlScheme: Keyboard&Mouse
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}

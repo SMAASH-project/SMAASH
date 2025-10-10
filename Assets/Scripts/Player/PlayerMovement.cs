@@ -7,124 +7,117 @@ public class PlayerMovement : MonoBehaviour
 {
     PhotonView view;
 
+    [Header("References")]
     public Rigidbody2D rb;
-    public bool isDead;
+    public Animator animator;
+    public SpriteRenderer spriteRenderer;
     public Transform groundCheck;
     public LayerMask groundLayer;
     public GameObject attackPoint;
     public GameObject attackPointOpposite;
 
-    public Animator animator;
-    public Joystick joystick;
-    public SpriteRenderer spriteRenderer;
+    [Header("Movement")]
+    public float speed = 8f;
+    public float jumpingPower = 10f;
+    public int extraJumpValue = 2;
 
-    private float horizontal;
-    private float speed = 8f;
-    private float jumpingPower = 10f;
+    private Vector2 moveInput;
+    private bool isJumpPressed;
+    private bool isGrounded;
     private int extraJumps;
-    private int extraJumpValue = 2;
+    public bool isDead;
 
 
     void Start()
     {
+        view = GetComponent<PhotonView>();
         isDead = false;
         extraJumps = extraJumpValue;
-        joystick = GameObject.Find("Floating Joystick").GetComponent<Joystick>();
-        view = GetComponent<PhotonView>();
+
+        // For WebGL: detect focus
+        //Application.focusChanged += OnAppFocusChanged;
+
+        Debug.Log(">>> PlayerMovement START - New Input Version <<<");
     }
 
     void FixedUpdate()
     {
-        if(view.IsMine && isDead == false){
-            horizontalMove();
-            flipCharacter();
-            checkJumpAnimation();
+        if (view.IsMine && !isDead)
+        {
+            MovePlayer();
+            FlipCharacter();
+            UpdateAnimations();
         }
     }
 
-    void horizontalMove(){
-        
-        if(joystick.Horizontal >= .2f)
-        {
-            horizontal = speed;
-        }
-        else if(joystick.Horizontal <= -.2f)
-        {
-            horizontal = -speed;
-        }
-        else
-        {
-            horizontal = 0f;
-        }
+    // Called automatically by new Input System when Move action is triggered
+    public void OnMove(InputAction.CallbackContext context)
+    {
+         // Ignore input if window not focused
+        moveInput = context.ReadValue<Vector2>();
+    }
 
+    // Called automatically by new Input System when Jump action is triggered
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (view.IsMine && !isDead)
+        {
+            if (IsGrounded()) extraJumps = extraJumpValue;
+
+            if (context.performed && extraJumps > 0)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+                extraJumps--;
+            }
+            else if (context.performed && extraJumps == 0 && IsGrounded())
+            {
+                rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+            }
+        }
+    }
+
+    void MovePlayer()
+    {
+        float horizontal = moveInput.x * speed;
         rb.velocity = new Vector2(horizontal, rb.velocity.y);
         animator.SetFloat("speed", Math.Abs(horizontal));
     }
 
-    void flipCharacter(){
-
-        if (horizontal > 0f)
+    void FlipCharacter()
+    {
+        if (moveInput.x > 0.1f)
         {
             spriteRenderer.flipX = false;
-            //attackPoint.transform.position = new Vector2(this.transform.position.x * 1, this.transform.position.y);
             view.RPC("OnDirectionChange_RIGHT", RpcTarget.Others);
         }
-        else if (horizontal < 0f)
+        else if (moveInput.x < -0.1f)
         {
             spriteRenderer.flipX = true;
-            //attackPoint.transform.position = new Vector2(attackPointPositionOpposite.x, this.transform.position.y);
             view.RPC("OnDirectionChange_LEFT", RpcTarget.Others);
         }
     }
 
-    void checkJumpAnimation(){
-
-        if (!IsGrounded())
-        {
-            animator.SetBool("isJumping", true);
-        }
-        else
-        {
-            animator.SetBool("isJumping", false);
-        }
-    }
-    [PunRPC]
-    void OnDirectionChange_LEFT()
+    void UpdateAnimations()
     {
-        spriteRenderer.flipX = true;
-        //attackPoint.transform.position = new Vector2(this.transform.position.x - 1f, this.transform.position.y);
-    }
-    [PunRPC]
-    void OnDirectionChange_RIGHT()
-    {
-        spriteRenderer.flipX = false;
-        //attackPoint.transform.position = new Vector2(this.transform.position.x + 1f, this.transform.position.y);
-    }  
-
-    public void Jump(InputAction.CallbackContext context)
-    {
-        if(view.IsMine && isDead == false)
-        {
-            if(IsGrounded())
-            {
-                extraJumps = extraJumpValue;
-            }
-
-            if(context.performed && extraJumps > 0)
-            {
-                rb.velocity = Vector2.up * jumpingPower;
-                extraJumps--;
-            }
-            else if(context.performed && extraJumps == 0 && IsGrounded())
-            {
-                rb.velocity = Vector2.up * jumpingPower;
-            }
-        }
+        isGrounded = IsGrounded();
+        animator.SetBool("isJumping", !isGrounded);
     }
 
     private bool IsGrounded()
     {
-        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer); 
+        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+    }
+
+    [PunRPC]
+    void OnDirectionChange_LEFT()
+    {
+        spriteRenderer.flipX = true;
+    }
+
+    [PunRPC]
+    void OnDirectionChange_RIGHT()
+    {
+        spriteRenderer.flipX = false;
     }
 
     */
