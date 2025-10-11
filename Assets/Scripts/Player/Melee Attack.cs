@@ -68,6 +68,7 @@ public class MeleeAttack : MonoBehaviour
     {
         if (this.enabled == true && context.performed && view.IsMine && canAttack == true)
         {
+            animator.SetBool("isJumping", false);
             
             animator.SetTrigger("Attack1");
 

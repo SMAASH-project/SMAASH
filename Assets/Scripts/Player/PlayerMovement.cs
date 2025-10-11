@@ -32,6 +32,7 @@ public class PlayerMovement : MonoBehaviour
         view = GetComponent<PhotonView>();
         isDead = false;
         extraJumps = extraJumpValue;
+        IsJumping = false;
     }
 
     void FixedUpdate()
@@ -68,10 +69,12 @@ public class PlayerMovement : MonoBehaviour
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
                 extraJumps--;
+                IsJumping = true;
             }
             else if (context.performed && extraJumps == 0 && IsGrounded())
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+                IsJumping = true;
             }
         }
     }
@@ -94,9 +97,13 @@ public class PlayerMovement : MonoBehaviour
     {
         isGrounded = IsGrounded();
         animator.SetBool("isJumping", !isGrounded);
+        if (isGrounded)
+        {
+            IsJumping = false;
+        }
     }
 
-    private bool IsGrounded()
+    public bool IsGrounded()
     {
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
     }
