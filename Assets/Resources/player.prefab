@@ -248,6 +248,7 @@ MonoBehaviour:
   jumpingPower: 10
   extraJumpValue: 2
   isDead: 0
+  isCountingDown: 0
 --- !u!114 &4356006495732988501
 MonoBehaviour:
   m_ObjectHideFlags: 0
