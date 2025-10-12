@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     private bool isGrounded;
     private int extraJumps;
     public bool isDead;
+    public bool isCountingDown;
 
     public bool IsJumping { get; private set; }
 
@@ -38,7 +39,7 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (view.IsMine && !isDead)
+        if (view.IsMine && !isDead && !isCountingDown)
         {
             FlipCharacter();
             UpdateAnimations();
@@ -48,6 +49,7 @@ public class PlayerMovement : MonoBehaviour
     // Called automatically by new Input System when Move action is triggered
     public void OnMove(InputAction.CallbackContext context)
     {
+        if(!view.IsMine || isDead || isCountingDown) return;
         moveInput = context.ReadValue<Vector2>();
 
         float horizontal = moveInput.x * speed;
@@ -59,7 +61,7 @@ public class PlayerMovement : MonoBehaviour
     // Called automatically by new Input System when Jump action is triggered
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (view.IsMine && !isDead)
+        if (view.IsMine && !isDead && !isCountingDown)
         { 
             if (IsGrounded())
             {
