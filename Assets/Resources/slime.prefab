@@ -184,6 +184,7 @@ MonoBehaviour:
   jumpingPower: 10
   extraJumpValue: 2
   isDead: 0
+  isCountingDown: 0
 --- !u!212 &4486674761032846597
 SpriteRenderer:
   m_ObjectHideFlags: 0
