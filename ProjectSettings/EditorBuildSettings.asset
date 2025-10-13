@@ -20,4 +20,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/sc_lobby.unity
     guid: ba4a8f33c65dc4aeb8b7929bfb9bcd66
+  - enabled: 1
+    path: Assets/Scenes/sc_waiting_room.unity
+    guid: c923e1282b084d0a911fb0b4afb283b5
   m_configObjects: {}
