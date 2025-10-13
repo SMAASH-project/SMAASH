@@ -23,7 +23,18 @@ public class WaitingRoomManager : MonoBehaviourPunCallbacks
 
     void Start()
     {
-        UpdateUI();
+        // Check if room already has enough players when we join
+        if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= requiredPlayers)
+        {
+            Debug.Log($"Room already has {PhotonNetwork.CurrentRoom.PlayerCount} players - starting game immediately");
+            if (waitingText != null) waitingText.text = "Player connected! Starting game...";
+            if (playerCountText != null) playerCountText.text = $"Players: {PhotonNetwork.CurrentRoom.PlayerCount}/{requiredPlayers}";
+            StartCoroutine(StartGameWithDelay());
+        }
+        else
+        {
+            UpdateUI();
+        }
     }
 
     /// <summary>
@@ -33,21 +44,24 @@ public class WaitingRoomManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.CurrentRoom == null)
         {
-            waitingText.text = "Error: Not in a room";
-            playerCountText.text = "";
+            if (waitingText != null) waitingText.text = "Error: Not in a room";
+            if (playerCountText != null) playerCountText.text = "";
             return;
         }
 
         int currentPlayers = PhotonNetwork.CurrentRoom.PlayerCount;
-        playerCountText.text = $"Players: {currentPlayers}/{requiredPlayers}";
+        if (playerCountText != null)
+        {
+            playerCountText.text = $"Players: {currentPlayers}/{requiredPlayers}";
+        }
 
         if (currentPlayers < requiredPlayers)
         {
-            waitingText.text = "Waiting for another player...";
+            if (waitingText != null) waitingText.text = "Waiting for another player...";
         }
         else if (!isStartingGame)
         {
-            waitingText.text = "Player connected! Starting game...";
+            if (waitingText != null) waitingText.text = "Player connected! Starting game...";
             StartCoroutine(StartGameWithDelay());
         }
     }
@@ -111,5 +125,16 @@ public class WaitingRoomManager : MonoBehaviourPunCallbacks
     public override void OnLeftRoom()
     {
         Debug.Log("Left the waiting room");
+        // Return to lobby
+        UnityEngine.SceneManagement.SceneManager.LoadScene("sc_lobby");
+    }
+
+    /// <summary>
+    /// Allows player to leave the waiting room and return to lobby
+    /// </summary>
+    public void LeaveWaitingRoom()
+    {
+        Debug.Log("Player chose to leave the waiting room");
+        PhotonNetwork.LeaveRoom();
     }
 }

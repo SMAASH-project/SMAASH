@@ -17,6 +17,8 @@ public class CreateAndJoinRooms : MonoBehaviourPunCallbacks
     {
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.MaxPlayers = 2; // Maximum 2 players for a match
+        roomOptions.IsVisible = true; // Visible in lobby
+        roomOptions.IsOpen = true; // Open for joining
         PhotonNetwork.CreateRoom(createInput.text, roomOptions);
     }
 
@@ -49,6 +51,8 @@ public class CreateAndJoinRooms : MonoBehaviourPunCallbacks
         Debug.Log("No room available, creating a new one for Quick Match");
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.MaxPlayers = 2;
+        roomOptions.IsVisible = true; // Allow others to find this room
+        roomOptions.IsOpen = true;
         PhotonNetwork.CreateRoom(null, roomOptions); // null = random room name
     }
 }
