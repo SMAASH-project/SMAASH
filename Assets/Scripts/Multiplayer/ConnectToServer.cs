@@ -1,28 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine; 
-using Photon.Pun;
 using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
+using Fusion;
 
-public class ConnectToServer : MonoBehaviourPunCallbacks
+public class ConnectToServer : MonoBehaviour
 {
-    // Start is called before the first frame update
-    
-    //Elkezd csatlakozni
-    void Start()
+    private NetworkRunner _runner;
+
+    private async void Start()
     {
-        PhotonNetwork.ConnectUsingSettings();   
+        await ConnectAndJoinLobby();
     }
 
-    //Miutan csatlakozott a szerverre elkezd csatlakozni a lobbyba 
-    public override void OnConnectedToMaster()
+    private async Task ConnectAndJoinLobby()
     {
-        PhotonNetwork.JoinLobby();
-    }
+        _runner = gameObject.AddComponent<NetworkRunner>();
+        gameObject.AddComponent<NetworkSceneManagerDefault>();
 
-    //Betolti a lobbit miutan csatlakozott a szerverre
-    public override void OnJoinedLobby()
-    {
-        SceneManager.LoadScene("sc_lobby");
+        var result = await _runner.JoinSessionLobby(SessionLobby.Shared);
+        if (result.Ok)
+        {
+            SceneManager.LoadScene("sc_lobby");
+        }
+        else
+        {
+            Debug.LogError($"Fusion: failed to join lobby. Reason: {result.ShutdownReason}");
+        }
     }
 }

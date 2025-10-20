@@ -1,9 +1,9 @@
+using System;
 using System.Collections;
 using UnityEngine;
-using System;
-using Photon.Pun;
+using Fusion;
 
-public class CameraController : MonoBehaviourPunCallbacks
+public class CameraController : NetworkBehaviour
 {
     private Camera cam;
     public float yOffset = 1.5f;
@@ -39,28 +39,22 @@ public class CameraController : MonoBehaviourPunCallbacks
         last = temp;
     }
 
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         cam = GetComponentInChildren<Camera>();
+        if (cam) cam.enabled = false; // default off until authority confirmed
         Bounds = 10f;
+    }
 
-        if (photonView.IsMine)
-        {
-            cam.enabled = true;
-        }
-        else
-        {
-            cam.enabled = false;
-        }
-
+    public override void Spawned()
+    {
+        if (cam) cam.enabled = Object.HasInputAuthority;
         StartCoroutine(SetYLevel());
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (photonView.IsMine && CamIsActive)
+        if (Object != null && Object.HasInputAuthority && CamIsActive)
         {
             UpdatePosition();
         }

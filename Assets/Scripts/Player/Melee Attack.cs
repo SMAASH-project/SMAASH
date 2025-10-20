@@ -1,15 +1,11 @@
 using UnityEngine;
-using Photon.Pun;
 using UnityEngine.InputSystem;
 using System.Collections;
+using Fusion;
 
-public class MeleeAttack : MonoBehaviour
+public class MeleeAttack : NetworkBehaviour
 {
-    PhotonView view;
-
     public Animator animator;
-
-    //public Animator attack_anim;
     public GameObject attackBtn;
 
     public Transform attackPoint;
@@ -17,13 +13,12 @@ public class MeleeAttack : MonoBehaviour
     public float attackRange = 1f;
     public LayerMask enemyLayer;
     public SpriteRenderer spriteRenderer;
-    
+
     public int attackDamage = 40;
     public int attackNum;
 
     private InputActionAsset inputAsset;
     private InputActionMap player;
-    
 
     int damage = 20;
     public bool canAttack = true;
@@ -32,106 +27,85 @@ public class MeleeAttack : MonoBehaviour
     public void Start()
     {
         attackNum = 1;
-        view = GetComponent<PhotonView>(); 
-
     }
 
     private void Awake()
     {
-        //Megkeresi a sajat action mapjet
-        inputAsset = this.GetComponent<PlayerInput>().actions;
-        player = inputAsset.FindActionMap("Player");
+        inputAsset = GetComponent<PlayerInput>()?.actions;
+        player = inputAsset?.FindActionMap("Player");
     }
 
-    private void OnEnable()
+    public override void Spawned()
     {
-        //Inditaskor hozzaadja
-        player.FindAction("Attack").started += Attack;
-        player.Enable();
+        // Subscribe input only for local player
+        if (Object.HasInputAuthority && player != null)
+        {
+            player.FindAction("Attack").started += Attack;
+            player.Enable();
+        }
     }
 
     private void OnDisable()
     {
-        //Eltavolitja
-        player.FindAction("Attack").started -= Attack;
-        player.Disable();
+        if (player != null)
+        {
+            player.FindAction("Attack").started -= Attack;
+            player.Disable();
+        }
     }
 
-    public void Dead(){
-        player.FindAction("Attack").started -= Attack;
-        player.Disable();
+    public void Dead()
+    {
+        if (player != null)
+        {
+            player.FindAction("Attack").started -= Attack;
+            player.Disable();
+        }
     }
 
-
-    [PunRPC]
     public void Attack(InputAction.CallbackContext context)
     {
-        if (this.enabled == true && context.performed && view.IsMine && canAttack == true)
+        if (this.enabled && context.performed && Object.HasInputAuthority && canAttack)
         {
             animator.SetBool("isJumping", false);
-            
             animator.SetTrigger("Attack1");
 
             StartCoroutine(AttackCooldownStart2());
 
-            //Valtozoba tarolja azt a collidert (masik jatekost), ami a koron belul van
-            if (spriteRenderer.flipX == true)
+            if (spriteRenderer.flipX)
             {
                 Collider2D hitEnemyOpposite = Physics2D.OverlapCircle(attackPointOpposite.position, attackRange, enemyLayer);
-                PhotonView targetPhotonView = hitEnemyOpposite.GetComponent<PhotonView>();
-                if (targetPhotonView != null)
+                if (hitEnemyOpposite != null && hitEnemyOpposite.TryGetComponent<NetworkObject>(out _))
                 {
-                    hitEnemyOpposite.GetComponent<PlayerHealth>().TakeDamageCaller(damage);
+                    hitEnemyOpposite.GetComponent<PlayerHealth>()?.TakeDamageCaller(damage);
                 }
-                //hitEnemyOpposite.GetComponent<TakeDmg>().TakeDamageCaller(damage);
-
             }
-            else if (spriteRenderer.flipX == false)
+            else
             {
                 Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
-                PhotonView targetPhotonView = hitEnemy.GetComponent<PhotonView>();
-                if (targetPhotonView != null)
+                if (hitEnemy != null && hitEnemy.TryGetComponent<NetworkObject>(out _))
                 {
-                    hitEnemy.GetComponent<PlayerHealth>().TakeDamageCaller(damage);
+                    hitEnemy.GetComponent<PlayerHealth>()?.TakeDamageCaller(damage);
                 }
-                //hitEnemy.GetComponent<TakeDmg>().TakeDamageCaller(damage);
             }
-
-            
         }
     }
 
-    
-
-    IEnumerator AttackCooldownStart2(){
-        // Wait a small frame so Animator actually transitions into the attack state
+    IEnumerator AttackCooldownStart2()
+    {
         yield return null;
 
-        // Get current animation clip length
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
         float clipLength = stateInfo.length;
 
-        // Wait for it to finish
         yield return new WaitForSeconds(clipLength);
 
-        // Now you can run post-attack logic (e.g. enabling next actions)
         canAttack = true;
     }
 
-
-
-    //Lerajzolja a kort a jobb lathatosagert az editorban
     void OnDrawGizmosSelected()
     {
-        if (attackPoint == null)
-        {
-            return;
-        }
-
-        if (attackPointOpposite == null)
-        {
-            return;
-        }
+        if (attackPoint == null || attackPointOpposite == null) return;
 
         Gizmos.DrawWireSphere(attackPoint.position, attackRange);
         Gizmos.DrawWireSphere(attackPointOpposite.position, attackRange);
