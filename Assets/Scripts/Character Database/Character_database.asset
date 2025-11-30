@@ -15,5 +15,9 @@ MonoBehaviour:
   character:
   - characterSprite: {fileID: 1319539680, guid: dc681598c0821da48a19a586dfc794fa, type: 3}
     character_name: Samurai
+    playerPrefab:
+      RawGuidValue: 69c73ce674bc74beeb3d264ee70c9a32
   - characterSprite: {fileID: -1527712398, guid: d8d6c0ed367bb42c9adb616440f7d2cb, type: 3}
     character_name: Slime
+    playerPrefab:
+      RawGuidValue: de6098cdc155447bf9cab0e82311e9b0

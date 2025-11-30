@@ -1,292 +1,199 @@
-/*
+using Fusion;
+using Fusion.Sockets;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using UnityEngine;
-using TMPro;
-using Fusion;
-using Fusion.Sockets;
-
-public class CreateAndJoinRooms : MonoBehaviour, INetworkRunnerCallbacks
-{
-    [SerializeField] private int maxPlayers = 2;
-    [SerializeField] private SceneRef mainScene; // assign sc_main in Inspector
-
-    private TMP_InputField createInput;
-    private TMP_InputField joinInput;
-
-    private bool isQuickMatch = false;
-
-    private NetworkRunner runner;
-    private INetworkSceneManager sceneManager;
-    private List<SessionInfo> sessions = new List<SessionInfo>();
-
-    private async void Start()
-    {
-        createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
-        joinInput   = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
-
-        // Setup NetworkRunner
-        runner = gameObject.AddComponent<NetworkRunner>();
-        runner.ProvideInput = true;
-        
-        sceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>();
-        
-        runner.AddCallbacks(this);
-
-        // Join the shared lobby to receive session list updates (for QuickMatch)
-        var result = await runner.JoinSessionLobby(SessionLobby.Shared);
-        if (!result.Ok)
-        {
-            Debug.LogError($"Failed to join session lobby: {result.ShutdownReason}");
-        }
-    }
-
-    public async void CreateRoom()
-    {
-        isQuickMatch = false;
-        string name = string.IsNullOrWhiteSpace(createInput?.text) ? Guid.NewGuid().ToString("N") : createInput.text;
-
-        var props = new Dictionary<string, SessionProperty> {
-            { "MaxPlayers", maxPlayers }
-        };
-
-        var result = await runner.StartGame(new StartGameArgs {
-            GameMode = GameMode.AutoHostOrClient,
-            SessionName = name,
-            SceneManager = sceneManager,
-            SessionProperties = props
-        });
-
-        if (!result.Ok)
-        {
-            Debug.LogError($"Failed to start game: {result.ShutdownReason}");
-        }
-    }
-
-    public async void JoinRoom()
-    {
-        if (string.IsNullOrWhiteSpace(joinInput?.text))
-        {
-            Debug.LogWarning("Fusion: JoinRoom called without a room name.");
-            return;
-        }
-
-        var result = await runner.StartGame(new StartGameArgs {
-            GameMode = GameMode.Client,
-            SessionName = joinInput.text,
-            SceneManager = sceneManager
-        });
-
-        if (!result.Ok)
-        {
-            Debug.LogError($"Failed to join room: {result.ShutdownReason}");
-        }
-    }
-
-   public async void QuickMatch()
-{
-    isQuickMatch = true;
-
-    // Ha van már futó NetworkRunner, leállítjuk és újraindítjuk
-    if (runner != null && runner.IsRunning)
-    {
-        await runner.Shutdown();
-        Destroy(runner);
-        runner = gameObject.AddComponent<NetworkRunner>();
-        runner.ProvideInput = true;
-        sceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>();
-        runner.AddCallbacks(this);
-    }
-
-    // Frissítjük a session listát
-    sessions = sessions ?? new List<SessionInfo>();
-    var target = sessions.FirstOrDefault(s => s.PlayerCount < s.MaxPlayers && s.IsValid);
-
-    if (target != null)
-    {
-        // Kiírjuk a szoba állapotát
-        Debug.Log($"Szoba: {target.Name}, Játékosok száma: {target.PlayerCount}/{target.MaxPlayers}");
-
-        // Ha a szobában már legalább 2 játékos van, csatlakozunk
-        if (target.PlayerCount >= 2)
-        {
-            var result = await runner.StartGame(new StartGameArgs
-            {
-                GameMode = GameMode.Client,
-                SessionName = target.Name,
-                SceneManager = sceneManager,
-                SessionProperties = target.Properties.ToDictionary(kv => kv.Key, kv => kv.Value)
-            });
-
-            if (!result.Ok)
-                Debug.LogError($"Hibás csatlakozás: {result.ShutdownReason}");
-            else
-                Debug.Log($"Sikeres csatlakozás a szobához: {target.Name}");
-        }
-        else
-        {
-            Debug.Log("Még nincs elég játékos a szobában.");
-        }
-    }
-    else
-    {
-        // Ha nincs elérhető szoba, új szobát hozunk létre
-        var props = new Dictionary<string, SessionProperty>
-        {
-            { "MaxPlayers", maxPlayers }
-        };
-
-        var result = await runner.StartGame(new StartGameArgs
-        {
-            GameMode = GameMode.Host,
-            SessionName = $"qm-{Guid.NewGuid():N}",
-            SceneManager = sceneManager,
-            SessionProperties = props
-        });
-
-        if (!result.Ok)
-            Debug.LogError($"Hiba új szoba létrehozásakor: {result.ShutdownReason}");
-        else
-            Debug.Log("Új szoba sikeresen létrehozva.");
-    }
-}
-
-    // INetworkRunnerCallbacks
-
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
-    {
-        sessions = sessionList ?? new List<SessionInfo>();
-    }
-
-    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
-    {
-        if (runner.IsServer || runner.IsSharedModeMasterClient)
-        {
-            int count = runner.ActivePlayers.Count();
-            if (count == maxPlayers && mainScene.IsValid)
-            {
-                Debug.Log($"Room full: request networked scene change to {mainScene} (use sceneManager to load the scene).");
-            }
-        }
-    }
-
-    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
-    public void OnInput(NetworkRunner runner, NetworkInput input) { }
-    public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
-    public void OnShutdown(NetworkRunner runner, ShutdownReason reason) { }
-    public void OnConnectedToServer(NetworkRunner runner) { }
-    public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason) { }
-    public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
-    public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
-    public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
-    public void OnSessionOpen(NetworkRunner runner) { }
-    public void OnSessionClose(NetworkRunner runner) { }
-    public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
-    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data) { }
-    public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
-    public void OnSceneLoadDone(NetworkRunner runner) { }
-    public void OnSceneLoadStart(NetworkRunner runner) { }
-    public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
-    public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-    public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-    public void OnObjectDestroyed(NetworkRunner runner, NetworkObject obj) { }
-    public void OnObjectSpawned(NetworkRunner runner, NetworkObject obj) { }
-}
-
-*/
-
-
-using Fusion;
-using Fusion.Sockets;
-using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class CreateAndJoinRooms : MonoBehaviour, INetworkRunnerCallbacks
 {
-    [SerializeField] private NetworkPrefabRef _playerPrefab;
-    private Dictionary<PlayerRef, NetworkObject> _spawnedCharacters = new Dictionary<PlayerRef, NetworkObject>();
-
-    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
-    {
-        if (runner.IsServer)
-        {
-            // Create a unique position for the player
-            Vector2 spawnPosition = new Vector2((player.RawEncoded % runner.Config.Simulation.PlayerCount) * 3, 1);
-            NetworkObject networkPlayerObject = runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
-            // Keep track of the player avatars for easy access
-            _spawnedCharacters.Add(player, networkPlayerObject);
-        }
-    }
-
-    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
-    {
-        if (_spawnedCharacters.TryGetValue(player, out NetworkObject networkObject))
-        {
-            runner.Despawn(networkObject);
-            _spawnedCharacters.Remove(player);
-        }
-    }
+    #region  INetworkRunnerCallbacks
     public void OnInput(NetworkRunner runner, NetworkInput input) { }
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
     public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
     public void OnConnectedToServer(NetworkRunner runner) { }
     public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason) { }
-    public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
+    public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { request.Accept(); }
     public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
     public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
     public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
     public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
-    public void OnSceneLoadDone(NetworkRunner runner) { }
-    public void OnSceneLoadStart(NetworkRunner runner) { }
-    public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player){ }
-    public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player){ }
-    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data) { }
+    public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
+    public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
     public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
+    public void OnSceneLoadStart(NetworkRunner runner) { }
+    #endregion
+
+    
+
+    [Header("Setup")]
+    public Character_Database characterDatabase;
+    [SerializeField] private string _gameSceneName = "sc_main"; // Ensure this matches your Build Settings
 
     private NetworkRunner _runner;
-
     private TMP_InputField createInput;
     private TMP_InputField joinInput;
+
+    // Stores the character index for each player
+    private Dictionary<PlayerRef, int> _playerSelections = new Dictionary<PlayerRef, int>();
+    // Prevents spawning duplicates
+    private Dictionary<PlayerRef, NetworkObject> _spawnedCharacters = new Dictionary<PlayerRef, NetworkObject>();
 
     void Start()
     {
         createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
-        joinInput   = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
+        joinInput = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
     }
+
+    public void CreateRoom() => StartGame(GameMode.Host, createInput.text);
+    public void JoinRoom() => StartGame(GameMode.Client, joinInput.text);
+
     async void StartGame(GameMode mode, string roomName)
     {
-        Debug.Log($"Starting game in mode: {mode} with room name: {roomName}");
         _runner = gameObject.AddComponent<NetworkRunner>();
         _runner.ProvideInput = true;
+        _runner.AddCallbacks(this);
 
-        var scene = SceneRef.FromIndex(1); // sc_main
-        Debug.Log(scene);
-        var sceneInfo = new NetworkSceneInfo();
-        if (scene.IsValid)
-        {
-            sceneInfo.AddSceneRef(scene, LoadSceneMode.Additive);
-        }
-        
-        await _runner.StartGame(new StartGameArgs()
+        // IMPORTANT: Keep this object alive to handle OnSceneLoadDone in the next scene
+        DontDestroyOnLoad(gameObject);
+
+        var sceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>();
+
+        await _runner.StartGame(new StartGameArgs
         {
             GameMode = mode,
             SessionName = roomName,
-            Scene = sceneInfo,
-            SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
+            PlayerCount = 2,
+            SceneManager = sceneManager
         });
     }
-    public void CreateRoom()
+
+    // 1. When a player joins (Host or Client)
+    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
-        StartGame(GameMode.Host, createInput.text.ToString());
+        // If I am the one who just joined (Client or Host), send/store my selection
+        if (player == runner.LocalPlayer)
+        {
+            int mySelection = PlayerPrefs.GetInt("selectedOption", 0);
+
+            if (runner.IsServer)
+            {
+                // Host stores their own selection directly
+                if (!_playerSelections.ContainsKey(player))
+                {
+                    _playerSelections.Add(player, mySelection);
+                    Debug.Log($"Host (Player {player}) selected character index: {mySelection}");
+                }
+                CheckStartCondition(runner);
+            }
+            else
+            {
+                // Client sends selection to Server via Reliable Data
+                // FIX: Removed 'new ReliableKey(1)' argument. The system generates the key.
+                byte[] data = BitConverter.GetBytes(mySelection);
+                runner.SendReliableDataToServer(default, data);
+                Debug.Log($"Client (Player {player}) sent selection index: {mySelection}");
+            }
+        }
     }
-    public void JoinRoom()
+
+    // 2. Host receives Client's selection
+    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
     {
-        StartGame(GameMode.Client, joinInput.text.ToString());
+        // FIX: Removed 'key.Int == 1' check. We assume all data is character selection.
+        if (runner.IsServer) 
+        {
+            int selection = BitConverter.ToInt32(data.Array, data.Offset);
+            
+            if (!_playerSelections.ContainsKey(player))
+            {
+                _playerSelections.Add(player, selection);
+                Debug.Log($"Server received selection from Player {player}: {selection}");
+            }
+            else
+            {
+                _playerSelections[player] = selection;
+            }
+
+            CheckStartCondition(runner);
+        }
+    }
+
+    // 3. Check if both players are present AND we know their characters
+    private void CheckStartCondition(NetworkRunner runner)
+    {
+        if (!runner.IsServer) return;
+
+        // We need 2 players in the session
+        if (runner.SessionInfo.PlayerCount < 2) 
+        {
+            Debug.Log($"Waiting for players... ({runner.SessionInfo.PlayerCount}/2)");
+            return;
+        }
+
+        // We need 2 selections in the dictionary (Host + Client)
+        if (_playerSelections.Count < 2)
+        {
+            Debug.Log($"Waiting for character selections... ({_playerSelections.Count}/2)");
+            return;
+        }
+
+        Debug.Log("All players ready and selections received. Loading Game Scene.");
+        runner.LoadScene(_gameSceneName);
+    }
+
+    // 4. Scene Loaded -> Spawn Players
+    public void OnSceneLoadDone(NetworkRunner runner)
+    {
+        if (!runner.IsServer) return;
+
+        Debug.Log("Scene Load Done. Spawning Players...");
+
+        foreach (var player in runner.ActivePlayers)
+        {
+            if (_spawnedCharacters.ContainsKey(player)) continue;
+
+            // Get the selection we stored earlier
+            int index = 0;
+            if (_playerSelections.TryGetValue(player, out int selection))
+            {
+                index = selection;
+            }
+            else
+            {
+                Debug.LogWarning($"No selection found for player {player}. Defaulting to 0.");
+            }
+            
+            Character characterData = characterDatabase.GetCharacter(index);
+
+            // Check if prefab is valid to prevent ArgumentException
+            if (characterData != null && characterData.playerPrefab.IsValid)
+            {
+                // Calculate spawn position (Player 0 at 0, Player 1 at 3)
+                Vector3 spawnPos = new Vector3(player.RawEncoded * 3f, 1f, 0f);
+                
+                NetworkObject obj = runner.Spawn(characterData.playerPrefab, spawnPos, Quaternion.identity, player);
+                _spawnedCharacters.Add(player, obj);
+                
+                Debug.Log($"Spawned {characterData.character_name} for {player}");
+            }
+            else
+            {
+                Debug.LogError($"Invalid prefab for player {player} (Index: {index}). Check CharacterDatabase Inspector!");
+            }
+        }
+    }
+
+    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
+    {
+        if (_spawnedCharacters.TryGetValue(player, out var obj))
+        {
+            runner.Despawn(obj);
+            _spawnedCharacters.Remove(player);
+        }
+        _playerSelections.Remove(player);
     }
 }
