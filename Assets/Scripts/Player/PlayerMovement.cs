@@ -97,6 +97,7 @@ public class PlayerMovement : NetworkBehaviour
         float horizontal = moveInput.x * speed;
         rb.velocity = new Vector2(horizontal, rb.velocity.y);
         if (animator) animator.SetFloat("speed", Mathf.Abs(horizontal));
+        Debug.Log("Horizontal Input: " + horizontal); 
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -111,6 +112,7 @@ public class PlayerMovement : NetworkBehaviour
             if (!IsGrounded()) extraJumps--;
             IsJumping = true;
         }
+        Debug.Log("Jump Input: " + context.performed);
     }
 
     void FlipCharacterLocal()
