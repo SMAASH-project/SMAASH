@@ -1,3 +1,4 @@
+using Fusion;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,4 +10,5 @@ public class Character
 {
     public Sprite characterSprite;
     public string character_name;
+    public NetworkPrefabRef playerPrefab;
 }

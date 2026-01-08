@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Photon.Pun;
+using Fusion; // replace Photon.Pun
 
 public class parallax_effect : MonoBehaviour
 {
@@ -16,8 +16,9 @@ public class parallax_effect : MonoBehaviour
         GameObject[] Players = GameObject.FindGameObjectsWithTag("Player");
         foreach (GameObject p in Players)
         {
-            PhotonView view = p.GetComponent<PhotonView>();
-            if (view != null && view.IsMine)
+            //PhotonView view = p.GetComponent<PhotonView>();
+            NetworkObject netObj = p.GetComponent<NetworkObject>();
+            if (netObj != null && netObj.HasInputAuthority) // local player?
             {
                 return p.GetComponentInChildren<Camera>();
             }
