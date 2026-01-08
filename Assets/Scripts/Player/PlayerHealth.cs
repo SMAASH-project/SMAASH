@@ -1,14 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Photon.Pun;
+using Fusion;
 
-public class PlayerHealth : MonoBehaviourPunCallbacks
+public class PlayerHealth : NetworkBehaviour
 {
-    PhotonView photonView;
-
     public Animator animator;
-
     public PlayerMovement playerMovement;
     public MeleeAttack meleeAttack;
     public ButtonCooldowns buttonCooldowns;
@@ -16,60 +11,87 @@ public class PlayerHealth : MonoBehaviourPunCallbacks
     public bool isDead = false;
     public HealthBar healthBar;
     public int maxHealth = 100;
-    private int currentHealth;
 
-    // Start is called before the first frame update
-    void Start()
+    // Fusion 2: use OnChangedRender for render-time change detection
+    // (OnChanged was removed in Fusion 2)
+    [Networked, OnChangedRender(nameof(OnHealthChanged))]
+    private int CurrentHealth { get; set; }
+
+    public override void Spawned()
     {
-        photonView = GetComponent<PhotonView>();
+        // Map UI: local player -> HealthBar1, opponent -> HealthBar2
+        bool isLocal = Object.HasInputAuthority;
+        string barName = isLocal ? "HealthBar1" : "HealthBar2";
+        var barGO = GameObject.Find(barName);
 
-        if(photonView.Owner.ActorNumber == 1){
-            healthBar = GameObject.Find("HealthBar1").GetComponent<HealthBar>();
-        }else if(photonView.Owner.ActorNumber == 2){
-            healthBar = GameObject.Find("HealthBar2").GetComponent<HealthBar>();
+        if (barGO != null)
+        {
+            healthBar = barGO.GetComponent<HealthBar>();
+            ApplyUI(); // Ensure UI shows correct values immediately
+        }
+        else
+        {
+            Debug.LogWarning($"PlayerHealth: Could not find {barName} in scene.");
         }
 
-        currentHealth = maxHealth;
-        healthBar.SetMaxHealth(maxHealth);
-        healthBar.SetHealth(currentHealth);    
-    
+        if (healthBar != null)
+        {
+            healthBar.SetMaxHealth(maxHealth);
+        }
+
+        if (Object.HasStateAuthority)
+        {
+            CurrentHealth = maxHealth;
+        }
+        else
+        {
+            // OnChangedRender is not invoked on initial spawn for clients,
+            // so call ApplyUI here to initialize visuals.
+            ApplyUI();
+        }
     }
 
     public void TakeDamageCaller(int damage)
     {
-        photonView.RPC("TakeDamage", RpcTarget.All, damage);
+        if (isDead) return;
+        RPC_RequestDamage(damage);
     }
 
-    [PunRPC]
-    public void TakeDamage(int damage)
+    [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+    private void RPC_RequestDamage(int damage, RpcInfo info = default)
     {
-        if (!photonView.IsMine || isDead == true) return;
+        if (isDead) return;
 
-        currentHealth -= damage;
+        int newHealth = Mathf.Max(0, CurrentHealth - Mathf.Max(0, damage));
+        CurrentHealth = newHealth;
 
-        if (currentHealth <= 0)
+        if (newHealth <= 0)
         {
-            Die();
+            RPC_ApplyDeath();
         }
-
-        // Frissítjük a saját healthbarunkat
-        healthBar.SetHealth(currentHealth);
-
-        // Szinkronizáljuk a sebzést a többiekkel
-        photonView.RPC("UpdateHealth", RpcTarget.Others, currentHealth);
     }
 
-    public void Die()
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void RPC_ApplyDeath()
     {
-        currentHealth = 0;
-        isDead = true;
-        animator.SetBool("isDead", true);
+        if (isDead) return;
 
-        this.GetComponent<MeleeAttack>().enabled = false;
-        this.GetComponent<PlayerMovement>().enabled =  false;
-        this.GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
-        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Player"), true);
-        photonView.RPC("IgnoreCollision", RpcTarget.Others);
+        isDead = true;
+        if (animator) animator.SetBool("isDead", true);
+
+        var rb = GetComponent<Rigidbody2D>();
+        if (rb) rb.constraints = RigidbodyConstraints2D.FreezeAll;
+
+        if (meleeAttack) meleeAttack.enabled = false;
+        if (playerMovement) playerMovement.enabled = false;
+
+        Physics2D.IgnoreLayerCollision(
+            LayerMask.NameToLayer("Player"),
+            LayerMask.NameToLayer("Player"),
+            true
+        );
+
+        ApplyUI();
     }
 
     [PunRPC]
@@ -86,23 +108,14 @@ public class PlayerHealth : MonoBehaviourPunCallbacks
     [PunRPC]
     void UpdateHealth(int updatedHealth)
     {
-        if (currentHealth <= 0)
-        {
-            currentHealth = 0;
-            healthBar.SetHealth(currentHealth);
-        }else
-        {
-           currentHealth = updatedHealth;
-            healthBar.SetHealth(currentHealth); 
-        }
+        ApplyUI();
     }
 
-    // Új játékos csatlakozásakor frissítjük a health értékeket
-    public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
+    private void ApplyUI()
     {
-        if (photonView.IsMine)
-        {
-            photonView.RPC("UpdateHealth", newPlayer, currentHealth);
-        }
+        if (healthBar == null) return;
+
+        healthBar.SetMaxHealth(maxHealth);
+        healthBar.SetHealth(CurrentHealth);
     }
 }
