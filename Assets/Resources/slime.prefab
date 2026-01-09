@@ -111,6 +111,8 @@ GameObject:
   - component: {fileID: 7715241876941772291}
   - component: {fileID: 9175846915309582073}
   - component: {fileID: 2455103009498964236}
+  - component: {fileID: -8582124914275988891}
+  - component: {fileID: -4624132584009430742}
   m_Layer: 7
   m_Name: slime
   m_TagString: Player
@@ -175,12 +177,9 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
-  attackPoint: {fileID: 8064911762334722304}
-  attackPointOpposite: {fileID: 0}
   speed: 8
   jumpingPower: 10
   extraJumpValue: 2
-  isDead: 0
   isCountingDown: 0
 --- !u!212 &4486674761032846597
 SpriteRenderer:
@@ -302,7 +301,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -368,8 +367,8 @@ MonoBehaviour:
   m_ActionEvents:
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5571808162296724515}
-        m_TargetAssemblyTypeName: PlayerMovement, Assembly-CSharp
+      - m_Target: {fileID: -4624132584009430742}
+        m_TargetAssemblyTypeName: LocalInputHandler, Assembly-CSharp
         m_MethodName: OnMove
         m_Mode: 0
         m_Arguments:
@@ -388,8 +387,8 @@ MonoBehaviour:
     m_ActionName: Player/Look[/Mouse/delta,/Pen/delta]
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5571808162296724515}
-        m_TargetAssemblyTypeName: PlayerMovement, Assembly-CSharp
+      - m_Target: {fileID: -4624132584009430742}
+        m_TargetAssemblyTypeName: LocalInputHandler, Assembly-CSharp
         m_MethodName: OnJump
         m_Mode: 0
         m_Arguments:
@@ -459,7 +458,7 @@ MonoBehaviour:
     m_ActionId: 63f41480-bf33-46a7-a869-2f69cc8b39d0
     m_ActionName: Player/Attack[/Keyboard/a]
   m_NeverAutoSwitchControlSchemes: 1
-  m_DefaultControlScheme: Keyboard&Mouse
+  m_DefaultControlScheme: 
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -518,7 +517,37 @@ MonoBehaviour:
   - {fileID: 8691144834461129292}
   - {fileID: 5571808162296724515}
   - {fileID: 9175846915309582073}
+  - {fileID: -8582124914275988891}
   ForceRemoteRenderTimeframe: 0
+--- !u!114 &-8582124914275988891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4021654725828388503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 158639473, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  SyncScale: 0
+  SyncParent: 0
+  _autoAOIOverride: 1
+  DisableSharedModeInterpolation: 0
+--- !u!114 &-4624132584009430742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4021654725828388503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 340c386edf99f4e518557c34fa78bcce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4114129097919910443
 GameObject:
   m_ObjectHideFlags: 0
