@@ -11,6 +11,10 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     public Character_Database characterDatabase;
     [SerializeField] private string _gameSceneName = "sc_main";
 
+    [Header("Spawn Points")]
+    [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
+    [SerializeField] private string player2SpawnPointName = "Player2_SpawnPoint";
+
     private NetworkRunner _runner;
     private TMP_InputField createInput;
     private TMP_InputField joinInput;
@@ -51,6 +55,11 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         {
             var handler = playerObj.GetComponent<LocalInputHandler>(); 
             if (handler != null) input.Set(handler.GetNetworkInput());
+            if (handler == null)
+            {
+                Debug.LogError("LocalInputHandler component not found on player object!");            
+            }
+    
         }
     }
 
@@ -68,11 +77,21 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
             if (characterData != null && characterData.playerPrefab.IsValid)
             {
-                // Logic: Host (Player 1) on Left (-8), Client (Player 2) on Right (+8)
-                bool isLeftSide = (player == runner.LocalPlayer); 
-                Vector3 spawnPos = new Vector3(isLeftSide ? -8f : 8f, 1f, 0f);
+                // Get spawn position from spawn point objects in the current scene
+                bool isLeftSide = (player == runner.LocalPlayer);
+                string spawnPointName = isLeftSide ? player1SpawnPointName : player2SpawnPointName;
                 
-                NetworkObject obj = runner.Spawn(characterData.playerPrefab, spawnPos, Quaternion.identity, player);
+                GameObject spawnPointObj = GameObject.Find(spawnPointName);
+                if (spawnPointObj == null)
+                {
+                    Debug.LogError($"Spawn point '{spawnPointName}' not found in scene!");
+                    continue;
+                }
+                
+                Vector3 spawnPos = spawnPointObj.transform.position;
+                Quaternion spawnRot = spawnPointObj.transform.rotation;
+                
+                NetworkObject obj = runner.Spawn(characterData.playerPrefab, spawnPos, spawnRot, player);
                 
                 // SetPlayerObject is required for OnInput to work!
                 runner.SetPlayerObject(player, obj);
