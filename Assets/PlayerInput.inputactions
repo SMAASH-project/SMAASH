@@ -49,7 +49,7 @@
                     "path": "<Gamepad>/leftStick",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Gamepad;Touch",
+                    "groups": "Gamepad;Touch;Keyboard&Mouse;Joystick;XR",
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": false
