@@ -50,17 +50,18 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     // --- INPUT BRIDGE ---
     public void OnInput(NetworkRunner runner, NetworkInput input) 
     {
-        // Links the Local Player's device to the spawned Character's Handler
+        var data = new NetworkInputData();
+
+        // Use TryGetPlayerObject to find specific character
         if (runner.TryGetPlayerObject(runner.LocalPlayer, out var playerObj))
         {
             var handler = playerObj.GetComponent<LocalInputHandler>(); 
-            if (handler != null) input.Set(handler.GetNetworkInput());
-            if (handler == null)
+            if (handler != null)
             {
-                Debug.LogError("LocalInputHandler component not found on player object!");            
+                data = handler.GetNetworkInput();
             }
-    
         }
+        input.Set(data);
     }
 
     // --- SPAWNING LOGIC ---
@@ -110,7 +111,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         if (sr != null) sr.flipX = true;
     }
 
-    #region Character Selection Logic (Unchanged)
+    #region Character Selection Logic
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
         if (player == runner.LocalPlayer)

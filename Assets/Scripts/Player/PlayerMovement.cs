@@ -1,5 +1,6 @@
 using UnityEngine;
 using Fusion;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : NetworkBehaviour
 {
@@ -12,37 +13,59 @@ public class PlayerMovement : NetworkBehaviour
 
     [Header("Settings")]
     public float speed = 8f;
-    public float jumpingPower = 12f;
-    public int extraJumpValue = 1;
+    public float jumpingPower = 20f;
+    //public int extraJumpValue = 1;
     public bool isCountingDown;
 
-    [Networked] private int extraJumps { get; set; }
+    private int extraJumps = 1;
+    
+    private NetworkCharacterController _cc;
 
     public override void Spawned()
     {
-        rb.simulated = true;
-        if (Object.HasInputAuthority) extraJumps = extraJumpValue;
+        rb = GetComponent<Rigidbody2D>();
     }
 
     public override void FixedUpdateNetwork()
     {
-        // GetInput only works on the Host and the Client who owns this player
-        if (GetInput(out NetworkInputData data) && !isCountingDown)
+        // GetInput retrieves data from the Client to the Host automatically
+        if (GetInput(out NetworkInputData data))
         {
-            // 1. Movement
             rb.velocity = new Vector2(data.moveInput.x * speed, rb.velocity.y);
 
-            // 2. Jumping
             if (data.jumpPressed)
             {
-                if (IsGrounded()) { Jump(); extraJumps = extraJumpValue; }
-                else if (extraJumps > 0) { Jump(); extraJumps--; }
+                Debug.Log("Jump pressed detected in FixedUpdateNetwork");
+                /*
+                if (IsGrounded() && extraJumps == 1)
+                {
+                    Jump();
+                    extraJumps = 1;
+                }
+                else if (!IsGrounded() && extraJumps == 1)
+                {
+                    Jump();
+                    extraJumps = 0;
+                }
+                */
+                Jump();
             }
         }
         ApplyVisuals();
     }
 
-    void Jump() => rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+    void Jump()
+    {
+        if (IsGrounded())
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+            extraJumps = 1;
+        }else if (extraJumps > 0)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+            extraJumps = 0;
+        }
+    } 
 
     void ApplyVisuals()
     {

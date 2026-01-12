@@ -111,8 +111,8 @@ GameObject:
   - component: {fileID: 7715241876941772291}
   - component: {fileID: 9175846915309582073}
   - component: {fileID: 2455103009498964236}
-  - component: {fileID: -8582124914275988891}
   - component: {fileID: -4624132584009430742}
+  - component: {fileID: 3719406029350148854}
   m_Layer: 7
   m_Name: slime
   m_TagString: Player
@@ -347,7 +347,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4021654725828388503}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
@@ -517,25 +517,8 @@ MonoBehaviour:
   - {fileID: 8691144834461129292}
   - {fileID: 5571808162296724515}
   - {fileID: 9175846915309582073}
-  - {fileID: -8582124914275988891}
+  - {fileID: 3719406029350148854}
   ForceRemoteRenderTimeframe: 0
---- !u!114 &-8582124914275988891
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4021654725828388503}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 158639473, guid: e725a070cec140c4caffb81624c8c787, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _stateAuthorityChangeErrorCorrectionDelta: 0
-  SyncScale: 0
-  SyncParent: 0
-  _autoAOIOverride: 1
-  DisableSharedModeInterpolation: 0
 --- !u!114 &-4624132584009430742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -548,6 +531,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 340c386edf99f4e518557c34fa78bcce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  jumpButton: {fileID: 0}
+--- !u!114 &3719406029350148854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4021654725828388503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5e690b5fb1084f5ab1c86457af401d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  SyncScale: 0
+  SyncParent: 1
+  _interpolationTarget: {fileID: 0}
+  UsePreciseRotation: 0
+  UseRenderSleepThresholds: 1
+  RenderThresholds:
+    UseEnergy: 1
+    Position: 0.01
+    Rotation: 0.01
+    Scale: 0.01
 --- !u!1 &4114129097919910443
 GameObject:
   m_ObjectHideFlags: 0
