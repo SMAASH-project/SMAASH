@@ -6,8 +6,8 @@ using Fusion;
 public class CameraController : NetworkBehaviour
 {
     private Camera cam;
-    public float yOffset = 1.5f;
-    public float zOffset = -9f;
+    public float yOffset = 3.8f;
+    public float zOffset = -2f;
     private Vector3 temp;
     private Vector3 last;
     private float yLevel;
@@ -32,8 +32,11 @@ public class CameraController : NetworkBehaviour
         }
 
         temp.x = transform.position.x;
-        temp.y = yLevel + yOffset;
+        temp.y = yLevel + yOffset; 
         temp.z = transform.position.z + zOffset;
+
+        Debug.Log($"Temp y: {temp.y}");
+        Debug.Log($"Y Level: {cam.transform.position.y}");
 
         cam.transform.position = temp;
         last = temp;
@@ -42,7 +45,11 @@ public class CameraController : NetworkBehaviour
     private void Awake()
     {
         cam = GetComponentInChildren<Camera>();
-        if (cam) cam.enabled = false; // default off until authority confirmed
+        if (cam)
+        {
+            cam.enabled = false; // default off until authority confirmed
+            cam.transform.SetParent(null, true);
+        }
         Bounds = 10f;
     }
 
@@ -52,7 +59,7 @@ public class CameraController : NetworkBehaviour
         StartCoroutine(SetYLevel());
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (Object != null && Object.HasInputAuthority && CamIsActive)
         {

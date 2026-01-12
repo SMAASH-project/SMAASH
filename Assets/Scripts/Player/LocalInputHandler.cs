@@ -1,28 +1,70 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class LocalInputHandler : MonoBehaviour
 {
-    private Vector2 moveInput;
-    private bool jumpPressed;
-
-    //OnMove is called by the Input System when movement input is detected
-    public void OnMove(InputAction.CallbackContext context) => moveInput = context.ReadValue<Vector2>();
+    [SerializeField] private Button jumpButton;
+    private FloatingJoystick joystick;
+    private bool jumpButtonPressed = false;
     
-    public void OnJump(InputAction.CallbackContext context)
+    void Start()
     {
-        if (context.performed) jumpPressed = true;
+        if (jumpButton != null)
+            jumpButton.onClick.AddListener(OnJumpButtonPressed);
+
+        if (jumpButton == null)
+        {
+            var go = GameObject.Find("Jump");
+            if (go != null)
+            {
+                jumpButton = go.GetComponent<Button>();
+                jumpButton?.onClick.AddListener(OnJumpButtonPressed);
+            }
+        }
+
+        joystick = FindObjectOfType<FloatingJoystick>();
     }
 
-    //This method packages the current input state into a NetworkInputData struct
+    public void OnJumpButtonPressed()
+    {
+        jumpButtonPressed = true;
+    }
+    
     public NetworkInputData GetNetworkInput()
     {
         NetworkInputData data = new NetworkInputData();
-        data.moveInput = moveInput;
-        data.jumpPressed = jumpPressed;
         
-        // Reset jump after it's been read
-        jumpPressed = false; 
+        // BILLENTYŰZET INPUT (PC)
+        Vector2 keyboardInput = Vector2.zero;
+        
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+                keyboardInput.x = -1;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+                keyboardInput.x = 1;
+            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed)
+                keyboardInput.y = 1;
+            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed)
+                keyboardInput.y = -1;
+        }
+        
+        // JOYSTICK INPUT (Mobil UI)
+        Vector2 joystickInput = Vector2.zero;
+        if (joystick != null)
+        {
+            joystickInput = new Vector2(joystick.Horizontal, joystick.Vertical);
+        }
+        
+        // KOMBINÁLT INPUT (bármelyik működik)
+        data.moveInput = keyboardInput.magnitude > 0.1f ? keyboardInput : joystickInput;
+        
+        // UGRÁS - Billentyűzet vagy UI gomb
+        bool keyboardJump = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+        data.jumpPressed = keyboardJump || jumpButtonPressed;
+        jumpButtonPressed = false; // reset
+        
         return data;
     }
 }
