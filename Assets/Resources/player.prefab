@@ -217,11 +217,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 497933689935421191}
   playerMovement: {fileID: 8095103847225091386}
-  meleeAttack: {fileID: 0}
-  buttonCooldowns: {fileID: 0}
-  isDead: 0
-  healthBar: {fileID: 0}
+  meleeAttack: {fileID: 4356006495732988501}
   maxHealth: 100
+  _isDead: 0
 --- !u!114 &8095103847225091386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -243,7 +241,6 @@ MonoBehaviour:
     m_Bits: 64
   speed: 8
   jumpingPower: 10
-  extraJumpValue: 2
   isCountingDown: 0
 --- !u!114 &4356006495732988501
 MonoBehaviour:
@@ -258,18 +255,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 497933689935421191}
-  attackBtn: {fileID: 0}
+  spriteRenderer: {fileID: 5567647222599282870}
   attackPoint: {fileID: 3735998398671886529}
   attackPointOpposite: {fileID: 1199901176270294408}
   attackRange: 1.04
   enemyLayer:
     serializedVersion: 2
     m_Bits: 136
-  spriteRenderer: {fileID: 5567647222599282870}
-  attackDamage: 40
-  attackNum: 0
-  canAttack: 1
-  isDead: 0
+  damage: 20
 --- !u!212 &5567647222599282870
 SpriteRenderer:
   m_ObjectHideFlags: 0
