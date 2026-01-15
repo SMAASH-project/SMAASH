@@ -11,7 +11,7 @@ public class Bullet : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
-        // Move the bullet
+
         if (rb != null)
         {
             rb.velocity = transform.right * speed;
