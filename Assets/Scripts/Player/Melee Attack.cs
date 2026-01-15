@@ -112,7 +112,6 @@ public class MeleeAttack : NetworkBehaviour
         Gizmos.DrawWireSphere(attackPoint.position, attackRange);
         Gizmos.DrawWireSphere(attackPointOpposite.position, attackRange);
     }
-}
 */
 
 using UnityEngine;
@@ -181,6 +180,8 @@ public class MeleeAttack : NetworkBehaviour
             if (hitEnemy.TryGetComponent<PlayerHealth>(out var health))
             {
                 health.TakeDamageCaller(damage);
+                animator.SetBool("isAttacking", false);
+                animator.ResetTrigger("Attack1");
             }
         }
 
@@ -196,11 +197,22 @@ public class MeleeAttack : NetworkBehaviour
         
         animator.ResetTrigger("Attack1");
         
-        // Get the current animation state info
-        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        // Get the correct animation length.
+        // If we are in transition, the current state info might still be 'Idle'.
+        // We need the 'Next' state info to get the actual Attack clip length.
+        float animLength = 0f;
+        if (animator.IsInTransition(0))
+        {
+            animLength = animator.GetNextAnimatorStateInfo(0).length;
+        }
+        else
+        {
+            animLength = animator.GetCurrentAnimatorStateInfo(0).length;
+        }
         
         // Wait for the actual animation length
-        yield return new WaitForSeconds(stateInfo.length);
+        yield return new WaitForSeconds(animLength);
+        
         animator.SetBool("isAttacking", false);
         canAttack = true;
     }
