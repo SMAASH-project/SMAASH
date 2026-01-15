@@ -92,6 +92,37 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 594775529136307252}
   m_Enabled: 1
+--- !u!1 &3418747170747174895
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6700760403166821046}
+  m_Layer: 7
+  m_Name: AttackPointOpposite
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6700760403166821046
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3418747170747174895}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: -0.436, y: -0.042, z: 0}
+  m_LocalScale: {x: 0.4, y: 0.4, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9056659282146628016}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &4021654725828388503
 GameObject:
   m_ObjectHideFlags: 0
@@ -113,6 +144,7 @@ GameObject:
   - component: {fileID: 2455103009498964236}
   - component: {fileID: -4624132584009430742}
   - component: {fileID: 3719406029350148854}
+  - component: {fileID: 4157545915337348763}
   m_Layer: 7
   m_Name: slime
   m_TagString: Player
@@ -133,6 +165,7 @@ Transform:
   m_LocalScale: {x: 2.5, y: 2.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 6700760403166821046}
   - {fileID: 9041520338673992418}
   - {fileID: 768120399513916215}
   - {fileID: 2921800509440567192}
@@ -154,10 +187,8 @@ MonoBehaviour:
   animator: {fileID: 0}
   playerMovement: {fileID: 0}
   meleeAttack: {fileID: 0}
-  buttonCooldowns: {fileID: 0}
-  isDead: 0
-  healthBar: {fileID: 0}
   maxHealth: 100
+  _isDead: 0
 --- !u!114 &5571808162296724515
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,7 +210,6 @@ MonoBehaviour:
     m_Bits: 64
   speed: 8
   jumpingPower: 10
-  extraJumpValue: 2
   isCountingDown: 0
 --- !u!212 &4486674761032846597
 SpriteRenderer:
@@ -518,6 +548,7 @@ MonoBehaviour:
   - {fileID: 5571808162296724515}
   - {fileID: 9175846915309582073}
   - {fileID: 3719406029350148854}
+  - {fileID: 4157545915337348763}
   ForceRemoteRenderTimeframe: 0
 --- !u!114 &-4624132584009430742
 MonoBehaviour:
@@ -555,6 +586,25 @@ MonoBehaviour:
     Position: 0.01
     Rotation: 0.01
     Scale: 0.01
+--- !u!114 &4157545915337348763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4021654725828388503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 836371ce0f49647e1bf381c262a4d179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 7715241876941772291}
+  attackPoint: {fileID: 9041520338673992418}
+  attackPointOpposite: {fileID: 6700760403166821046}
+  spriteRenderer: {fileID: 4486674761032846597}
+  damage: 20
+  bulletPrefab:
+    RawGuidValue: deb116c1fdf704320a6219415fc6902e
 --- !u!1 &4114129097919910443
 GameObject:
   m_ObjectHideFlags: 0
@@ -611,7 +661,7 @@ Transform:
   m_GameObject: {fileID: 8064911762334722304}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.3584258, y: 0.08537722, z: 0}
+  m_LocalPosition: {x: 0.452, y: -0.042, z: 0}
   m_LocalScale: {x: 0.4, y: 0.4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
