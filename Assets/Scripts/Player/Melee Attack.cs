@@ -18,6 +18,9 @@ public class MeleeAttack : NetworkBehaviour
     private InputActionMap playerMap;
     private bool canAttack = true;
 
+    // Network synced attack state
+    [Networked] public bool IsAttacking { get; set; }
+
     private void Awake()
     {
         inputAsset = GetComponent<PlayerInput>()?.actions;
@@ -26,7 +29,6 @@ public class MeleeAttack : NetworkBehaviour
 
     public override void Spawned()
     {
-        // Only the player sitting at the keyboard should trigger the Attack input
         if (Object.HasInputAuthority && playerMap != null)
         {
             playerMap.FindAction("Attack").started += OnAttackInput;
@@ -47,13 +49,17 @@ public class MeleeAttack : NetworkBehaviour
     {
         if (!canAttack) return;
 
-        // Trigger local animation immediately for responsiveness
-        animator.SetBool("isAttacking", true);
-        animator.SetBool("isJumping", false);
-        animator.SetTrigger("Attack1");
+        // Send RPC to state authority to process attack
+        RPC_PerformAttack(spriteRenderer.flipX);
+        
+        StartCoroutine(AttackCooldown());
+    }
 
-        // Determine which attack point to use based on sprite direction
-        Transform activePoint = spriteRenderer.flipX ? attackPointOpposite : attackPoint;
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void RPC_PerformAttack(bool isFacingLeft)
+    {
+        // Determine which attack point to use based on direction
+        Transform activePoint = isFacingLeft ? attackPointOpposite : attackPoint;
         
         // Find enemies in range
         Collider2D hitEnemy = Physics2D.OverlapCircle(activePoint.position, attackRange, enemyLayer);
@@ -65,26 +71,31 @@ public class MeleeAttack : NetworkBehaviour
             if (hitEnemy.TryGetComponent<PlayerHealth>(out var health))
             {
                 health.TakeDamageCaller(damage);
-                animator.SetBool("isAttacking", true);
-                animator.SetTrigger("Attack1");
             }
         }
 
-        StartCoroutine(AttackCooldown());
+        // Broadcast attack to all clients for animation
+        RPC_BroadcastAttack();
     }
 
-    IEnumerator AttackCooldown()
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void RPC_BroadcastAttack()
     {
-        canAttack = false;
-        
-        // Wait one frame for the animator to transition to the attack state
+        StartCoroutine(PlayAttackAnimation());
+    }
+
+    private IEnumerator PlayAttackAnimation()
+    {
+        animator.SetBool("isAttacking", true);
+        animator.SetBool("isJumping", false);
+        animator.SetTrigger("Attack1");
+
+        // Wait one frame for the animator to transition
         yield return null;
         
         animator.ResetTrigger("Attack1");
         
-        // Get the correct animation length.
-        // If we are in transition, the current state info might still be 'Idle'.
-        // We need the 'Next' state info to get the actual Attack clip length.
+        // Get the correct animation length
         float animLength = 0f;
         if (animator.IsInTransition(0))
         {
@@ -95,10 +106,15 @@ public class MeleeAttack : NetworkBehaviour
             animLength = animator.GetCurrentAnimatorStateInfo(0).length;
         }
         
-        // Wait for the actual animation length
         yield return new WaitForSeconds(animLength);
         
         animator.SetBool("isAttacking", false);
+    }
+
+    IEnumerator AttackCooldown()
+    {
+        canAttack = false;
+        yield return new WaitForSeconds(0.5f); // Local cooldown
         canAttack = true;
     }
 
