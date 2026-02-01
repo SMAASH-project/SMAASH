@@ -50,18 +50,26 @@ public class ShootingAttack : NetworkBehaviour
         Transform activePoint = spriteRenderer.flipX ? attackPointOpposite : attackPoint;
         
         // Send RPC to server to spawn bullet
-        SpawnBulletRpc(activePoint.position, activePoint.rotation);
+        SpawnBulletRpc(activePoint.position, activePoint.rotation, spriteRenderer.flipX);
 
         StartCoroutine(AttackCooldown());
     }
 
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    public void SpawnBulletRpc(Vector3 position, Quaternion rotation)
+    public void SpawnBulletRpc(Vector3 position, Quaternion rotation, bool facingLeft)
     {
+        Debug.Log("SpawnBulletRpc called at position: " + position);
         if (Runner != null && bulletPrefab.IsValid)
         {
             Debug.Log("Spawning bullet at: " + position);
-            Runner.Spawn(bulletPrefab, position, rotation);
+            NetworkObject bulletNetObj = Runner.Spawn(bulletPrefab, position, rotation);
+            Bullet bullet = bulletNetObj.GetComponent<Bullet>();
+
+            if (bullet != null)
+            {
+                Vector2 fireDirection = facingLeft ? Vector2.left : Vector2.right;
+                bullet.SetDirection(fireDirection);
+            }
         }
         else
         {
@@ -75,4 +83,6 @@ public class ShootingAttack : NetworkBehaviour
         yield return new WaitForSeconds(1f);
         canAttack = true;
     }
+
+    
 }

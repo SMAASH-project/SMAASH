@@ -177,6 +177,7 @@ public class PlayerHealth : NetworkBehaviour
             RPC_BroadcastDeath();
         }
     }
+    
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
     private void RPC_BroadcastDeath()
@@ -186,6 +187,7 @@ public class PlayerHealth : NetworkBehaviour
         if (playerMovement) playerMovement.enabled = false;
         
         var rb = GetComponent<Rigidbody2D>();
+        Debug.Log("Rigidbody: " + rb);
         if (rb) rb.constraints = RigidbodyConstraints2D.FreezeAll;
     }
 
