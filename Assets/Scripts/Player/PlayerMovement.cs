@@ -14,12 +14,14 @@ public class PlayerMovement : NetworkBehaviour
     [Header("Settings")]
     public float speed = 8f;
     public float jumpingPower = 20f;
-    //public int extraJumpValue = 1;
     public bool isCountingDown;
 
     private int extraJumps = 1;
     
-    private NetworkCharacterController _cc;
+    // Network synced animation states
+    [Networked] public bool IsFacingLeft { get; set; }
+    [Networked] public float NetworkSpeed { get; set; }
+    [Networked] public bool NetworkIsJumping { get; set; }
 
     public override void Spawned()
     {
@@ -28,16 +30,14 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
-        // Check if player is dead
         PlayerHealth playerHealth = GetComponent<PlayerHealth>();
         if (playerHealth != null && playerHealth.isDead)
         {
-            rb.velocity = new Vector2(0, rb.velocity.y); // Keep gravity but stop horizontal movement
-            ApplyVisuals();
+            rb.velocity = new Vector2(0, rb.velocity.y);
+            UpdateNetworkedAnimationValues();
             return;
         }
 
-        // GetInput retrieves data from the Client to the Host automatically
         if (GetInput(out NetworkInputData data))
         {
             rb.velocity = new Vector2(data.moveInput.x * speed, rb.velocity.y);
@@ -48,7 +48,7 @@ public class PlayerMovement : NetworkBehaviour
                 Jump();
             }
         }
-        ApplyVisuals();
+        UpdateNetworkedAnimationValues();
     }
 
     void Jump()
@@ -62,18 +62,34 @@ public class PlayerMovement : NetworkBehaviour
             rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
             extraJumps = 0;
         }
-    } 
+    }
 
-    void ApplyVisuals()
+    void UpdateNetworkedAnimationValues()
     {
+        // Only state authority updates networked values
+        if (Object.HasStateAuthority)
+        {
+            NetworkSpeed = Mathf.Abs(rb.velocity.x);
+            NetworkIsJumping = !IsGrounded();
+            
+            if (rb.velocity.x > 0.1f)
+                IsFacingLeft = false;
+            else if (rb.velocity.x < -0.1f)
+                IsFacingLeft = true;
+        }
+    }
+
+    // Render is called on all clients/host for rendering, synced with networked values
+    public override void Render()
+    {
+        // Apply animations from networked values (visible to all)
         if (animator)
         {
-            animator.SetFloat("speed", Mathf.Abs(rb.velocity.x));
-            animator.SetBool("isJumping", !IsGrounded());
+            animator.SetFloat("speed", NetworkSpeed);
+            animator.SetBool("isJumping", NetworkIsJumping);
         }
-        // Flip sprite based on movement direction
-        if (rb.velocity.x > 0.1f) spriteRenderer.flipX = false;
-        else if (rb.velocity.x < -0.1f) spriteRenderer.flipX = true;
+        
+        spriteRenderer.flipX = IsFacingLeft;
     }
 
     bool IsGrounded() => Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
