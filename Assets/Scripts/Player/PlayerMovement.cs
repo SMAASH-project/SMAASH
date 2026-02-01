@@ -27,6 +27,15 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
+        // Check if player is dead
+        PlayerHealth playerHealth = GetComponent<PlayerHealth>();
+        if (playerHealth != null && playerHealth.isDead)
+        {
+            rb.velocity = new Vector2(0, rb.velocity.y); // Keep gravity but stop horizontal movement
+            ApplyVisuals();
+            return;
+        }
+
         // GetInput retrieves data from the Client to the Host automatically
         if (GetInput(out NetworkInputData data))
         {
@@ -35,18 +44,6 @@ public class PlayerMovement : NetworkBehaviour
             if (data.jumpPressed)
             {
                 Debug.Log("Jump pressed detected in FixedUpdateNetwork");
-                /*
-                if (IsGrounded() && extraJumps == 1)
-                {
-                    Jump();
-                    extraJumps = 1;
-                }
-                else if (!IsGrounded() && extraJumps == 1)
-                {
-                    Jump();
-                    extraJumps = 0;
-                }
-                */
                 Jump();
             }
         }
