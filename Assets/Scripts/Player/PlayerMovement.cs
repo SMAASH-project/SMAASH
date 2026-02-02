@@ -30,6 +30,10 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
+        Debug.Log("isCountingDown: " + isCountingDown);
+
+        if(isCountingDown) return;
+
         PlayerHealth playerHealth = GetComponent<PlayerHealth>();
         if (playerHealth != null && playerHealth.isDead)
         {
