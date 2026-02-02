@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Fusion;
+using TMPro;
 
 public class CameraController : NetworkBehaviour
 {
@@ -11,16 +12,36 @@ public class CameraController : NetworkBehaviour
     private Vector3 temp;
     private Vector3 last;
     private float yLevel;
-    private bool CamIsActive = false;
+    public bool CamIsActive = false;
     private float Bounds;
-
+    public CanvasGroup blackScreenCanvasGroup; // Assign in Inspector
+    public TextMeshProUGUI loadingText; 
 
     //Wait for spawned player to fall down to the ground before setting camera Y level
     private IEnumerator SetYLevel()
     {
+
         yield return new WaitForSeconds(1f);
+        Debug.LogWarning("Setting camera Y level");
         yLevel = transform.position.y;
+        yield return new WaitForSeconds(1f); // Extra wait to reset the text
+        loadingText.text = "";
         CamIsActive = true;
+
+        // Fade out the black screen and loading text
+        if (blackScreenCanvasGroup != null)
+        {
+            float fadeDuration = 0.5f;
+            float elapsedTime = 0f;
+
+            while (elapsedTime < fadeDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                blackScreenCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsedTime / fadeDuration);
+                yield return null;
+            }
+            blackScreenCanvasGroup.alpha = 0f;
+        }
     }
 
     private void UpdatePosition()
@@ -55,8 +76,20 @@ public class CameraController : NetworkBehaviour
 
     public override void Spawned()
     {
-        if (cam) cam.enabled = Object.HasInputAuthority;
+        blackScreenCanvasGroup = FindObjectOfType<CanvasGroup>();
+        
+        //loadingText = FindObjectTag<TextMeshProUGUI>();
+        loadingText = GameObject.FindWithTag("LoadingText").GetComponent<TextMeshProUGUI>();
+        loadingText.text = "Loading...";
+        Debug.Log("text component found: " + loadingText.tag);
+        
+        if (cam) cam.enabled = Object.HasInputAuthority; 
         StartCoroutine(SetYLevel());
+    }
+
+    public bool IsCamActive()
+    {
+        return CamIsActive;
     }
 
     void LateUpdate()

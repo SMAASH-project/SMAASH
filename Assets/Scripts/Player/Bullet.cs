@@ -16,7 +16,6 @@ public class Bullet : NetworkBehaviour
         if (rb != null)
         {
             rb.velocity = direction * speed;
-            
         }
     }
 
