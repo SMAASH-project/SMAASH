@@ -7,7 +7,7 @@ public class CountdownScript : MonoBehaviour
     public TMP_Text countdown_text;
     private int expectedPlayerCount = 2; // Set this to the number of players you expect
     private float maxWaitTime = 10f; // Maximum time to wait for players to spawn
-
+    private bool camIsActive = false;
     void Start()
     {
         StartCoroutine(CountdownCoroutine());
@@ -32,13 +32,46 @@ public class CountdownScript : MonoBehaviour
         }
 
         Debug.Log("Players found for countdown: " + players.Length);
+        
+        // Wait for all player cameras to be active
+        waitTime = 0f;
+        bool allCamerasActive = false;
+        
+        while (!allCamerasActive && waitTime < maxWaitTime)
+        {
+            allCamerasActive = true;
+            int activeCamCount = 0;
+            
+            foreach (GameObject player in players)
+            {
+                CameraController camController = player.GetComponent<CameraController>();
+                if (camController == null || !camController.IsCamActive())
+                {
+                    allCamerasActive = false;
+                }
+                else
+                {
+                    activeCamCount++;
+                }
+            }
+            
+            Debug.Log("Cameras active: " + activeCamCount + "/" + players.Length);
+            
+            if (!allCamerasActive)
+            {
+                yield return new WaitForSeconds(0.5f);
+                waitTime += 0.5f;
+            }
+        }
+        
+        Debug.Log("All cameras ready!");
 
         // Freeze both players before countdown
         foreach (GameObject player in players)
         {
             player.GetComponent<PlayerMovement>().isCountingDown = true;
         }
-
+        
         // Countdown sequence
         countdown_text.text = "3";
         yield return new WaitForSeconds(1);
