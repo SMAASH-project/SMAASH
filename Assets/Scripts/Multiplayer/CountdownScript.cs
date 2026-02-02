@@ -5,6 +5,8 @@ using TMPro;
 public class CountdownScript : MonoBehaviour
 {
     public TMP_Text countdown_text;
+    private int expectedPlayerCount = 2; // Set this to the number of players you expect
+    private float maxWaitTime = 10f; // Maximum time to wait for players to spawn
 
     void Start()
     {
@@ -13,7 +15,23 @@ public class CountdownScript : MonoBehaviour
 
     IEnumerator CountdownCoroutine()
     {
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        // Wait for players to spawn
+        float waitTime = 0f;
+        GameObject[] players = new GameObject[0];
+        
+        while (players.Length < expectedPlayerCount && waitTime < maxWaitTime)
+        {
+            players = GameObject.FindGameObjectsWithTag("Player");
+            Debug.Log("Waiting for players... Found: " + players.Length + "/" + expectedPlayerCount);
+            
+            if (players.Length < expectedPlayerCount)
+            {
+                yield return new WaitForSeconds(0.5f);
+                waitTime += 0.5f;
+            }
+        }
+
+        Debug.Log("Players found for countdown: " + players.Length);
 
         // Freeze both players before countdown
         foreach (GameObject player in players)
