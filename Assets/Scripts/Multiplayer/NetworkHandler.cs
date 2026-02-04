@@ -22,6 +22,10 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     private Dictionary<PlayerRef, int> _playerSelections = new Dictionary<PlayerRef, int>();
     private Dictionary<PlayerRef, NetworkObject> _spawnedCharacters = new Dictionary<PlayerRef, NetworkObject>();
 
+    private GameMode _lastGameMode;
+    private string _lastRoomName;
+    private bool _isConnecting = false;
+
     void Start()
     {
         createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
@@ -33,18 +37,46 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     async void StartGame(GameMode mode, string roomName)
     {
-        _runner = gameObject.AddComponent<NetworkRunner>();
-        _runner.ProvideInput = true;
-        _runner.AddCallbacks(this);
-        DontDestroyOnLoad(gameObject);
+        if (_isConnecting) return; // Prevent multiple connection attempts
+        
+        _isConnecting = true;
+        _lastGameMode = mode;
+        _lastRoomName = roomName;
 
-        await _runner.StartGame(new StartGameArgs
+        try
         {
-            GameMode = mode,
-            SessionName = roomName,
-            PlayerCount = 2,
-            SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
-        });
+            // Clean up old runner if it exists
+            if (_runner != null)
+            {
+                Destroy(_runner.gameObject); 
+                _runner = null;
+            }
+
+            // Create a separate GameObject for the NetworkRunner so it doesn't destroy the NetworkHandler
+            GameObject runnerObj = new GameObject("NetworkRunner");
+            runnerObj.transform.SetParent(transform);
+            DontDestroyOnLoad(runnerObj);
+
+            _runner = runnerObj.AddComponent<NetworkRunner>();
+            _runner.ProvideInput = true;
+            _runner.AddCallbacks(this);
+
+            // Add SceneManager to the runner object as well
+            runnerObj.AddComponent<NetworkSceneManagerDefault>();
+
+            await _runner.StartGame(new StartGameArgs
+            {
+                GameMode = mode,
+                SessionName = roomName,
+                PlayerCount = 2,
+                SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to start game: {ex.Message}");
+            _isConnecting = false;
+        }
     }
 
     // --- INPUT BRIDGE ---
@@ -145,11 +177,32 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     #region Required Interface Callbacks
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { /* Despawn logic */ }
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
-    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
-    public void OnConnectedToServer(NetworkRunner runner) { }
-    public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason) { }
+    
+    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
+    {
+        Debug.Log($"[NetworkHandler] Shutdown - Reason: {shutdownReason}");
+        _isConnecting = false;
+    }
+    
+    public void OnConnectedToServer(NetworkRunner runner) 
+    { 
+        Debug.Log("[NetworkHandler] Connected to server");
+        _isConnecting = false;
+    }
+    
+    public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
+    {
+        Debug.LogWarning($"[NetworkHandler] Disconnected from server: {reason}");
+        _isConnecting = false;
+    }
+    
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { request.Accept(); }
-    public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
+    
+    public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason)
+    {
+        Debug.LogError($"[NetworkHandler] Connection failed: {reason} to {remoteAddress}");
+        _isConnecting = false;
+    }
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
     public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
     public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
