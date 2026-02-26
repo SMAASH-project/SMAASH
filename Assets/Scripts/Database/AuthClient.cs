@@ -25,6 +25,7 @@ public class AuthClient : MonoBehaviour
     private void Start()
     {
         TryAutoLogin();
+        passwordInput.contentType = TMP_InputField.ContentType.Password;
     }
 
     public void OnLoginButtonClicked()
