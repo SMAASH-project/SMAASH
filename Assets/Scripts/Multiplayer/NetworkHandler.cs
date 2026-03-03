@@ -2,6 +2,7 @@ using Fusion;
 using Fusion.Sockets;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -15,6 +16,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
     [SerializeField] private string player2SpawnPointName = "Player2_SpawnPoint";
 
+    private static NetworkHandler _instance;
     private NetworkRunner _runner;
     private TMP_InputField createInput;
     private TMP_InputField joinInput;
@@ -25,6 +27,19 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     private GameMode _lastGameMode;
     private string _lastRoomName;
     private bool _isConnecting = false;
+    private bool _sceneLoadRequested = false;
+
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
 
     void Start()
     {
@@ -37,31 +52,27 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     async void StartGame(GameMode mode, string roomName)
     {
-        if (_isConnecting) return; // Prevent multiple connection attempts
-        
+        if (_isConnecting) return;
+
         _isConnecting = true;
         _lastGameMode = mode;
         _lastRoomName = roomName;
 
         try
         {
-            // Clean up old runner if it exists
             if (_runner != null)
             {
-                Destroy(_runner.gameObject); 
+                Destroy(_runner.gameObject);
                 _runner = null;
             }
 
-            // Create a separate GameObject for the NetworkRunner so it doesn't destroy the NetworkHandler
+            // IMPORTANT: keep runner as ROOT object (no parent), so it survives scene loads
             GameObject runnerObj = new GameObject("NetworkRunner");
-            runnerObj.transform.SetParent(transform);
             DontDestroyOnLoad(runnerObj);
 
             _runner = runnerObj.AddComponent<NetworkRunner>();
             _runner.ProvideInput = true;
             _runner.AddCallbacks(this);
-
-            // Add SceneManager to the runner object as well
             runnerObj.AddComponent<NetworkSceneManagerDefault>();
 
             await _runner.StartGame(new StartGameArgs
@@ -101,6 +112,9 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     {
         if (!runner.IsServer) return;
 
+        Debug.Log("[NetworkHandler] Scene load done, spawning players...");
+        Debug.Log($"Active Players: {runner.ActivePlayers}, Player Selections: {_playerSelections.Count}");
+
         foreach (var player in runner.ActivePlayers)
         {
             if (_spawnedCharacters.ContainsKey(player)) continue;
@@ -125,6 +139,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
                 Quaternion spawnRot = spawnPointObj.transform.rotation;
                 
                 NetworkObject obj = runner.Spawn(characterData.playerPrefab, spawnPos, spawnRot, player);
+                Debug.Log($"Spawned player {player} with character index {index} at {spawnPos}");
                 
                 // SetPlayerObject is required for OnInput to work!
                 runner.SetPlayerObject(player, obj);
@@ -169,8 +184,13 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     private void CheckStartCondition(NetworkRunner runner)
     {
-        if (runner.IsServer && runner.SessionInfo.PlayerCount >= 2 && _playerSelections.Count >= 2)
+        if (!runner.IsServer || _sceneLoadRequested) return;
+
+        if (runner.ActivePlayers.Count() >= 2 && _playerSelections.Count >= 2)
+        {
+            _sceneLoadRequested = true;
             runner.LoadScene(_gameSceneName);
+        }
     }
     #endregion
 
@@ -182,6 +202,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     {
         Debug.Log($"[NetworkHandler] Shutdown - Reason: {shutdownReason}");
         _isConnecting = false;
+        _sceneLoadRequested = false;
+        if (_runner == runner) _runner = null;
     }
     
     public void OnConnectedToServer(NetworkRunner runner) 

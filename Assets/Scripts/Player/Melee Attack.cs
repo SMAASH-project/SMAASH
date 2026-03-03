@@ -109,6 +109,7 @@ public class MeleeAttack : NetworkBehaviour
         yield return new WaitForSeconds(animLength);
         
         animator.SetBool("isAttacking", false);
+        Debug.Log("Is attacking: " + animator.GetBool("isAttacking"));
     }
 
     IEnumerator AttackCooldown()
