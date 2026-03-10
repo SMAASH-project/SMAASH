@@ -207,7 +207,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 374240065}
         m_TargetAssemblyTypeName: AuthClient, Assembly-CSharp
-        m_MethodName: OnLoginButtonClicked
+        m_MethodName: OnLoginAndLogProfilesButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -353,6 +353,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseUrl: http://localhost:8080
+  profileSelectScene: sc_profile_select
+  mainSceneName: sc_main
   emailInput: {fileID: 1500917661}
   passwordInput: {fileID: 1034027055}
 --- !u!4 &374240066

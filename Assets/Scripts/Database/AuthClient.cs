@@ -6,16 +6,31 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
+// ── DTOs ──
 [Serializable] public class GameLoginRequest { public string email; public string password; }
-[Serializable] public class PlayerProfileDto { public int id; public string display_name; public long coins; public string last_login; }
-[Serializable] public class GameLoginResponse { public string accessToken; public string refreshToken; public PlayerProfileDto profile; }
+[Serializable] public class GameLoginResponse { public string accessToken; public string refreshToken; }
 [Serializable] public class RefreshRequestDto { public string refreshToken; }
 [Serializable] public class RefreshResponseDto { public string accessToken; public string refreshToken; }
 [Serializable] public class JwtPayload { public long exp; }
+[Serializable] public class GameJwtPayload { public long exp; public float sub; }
+
+[Serializable] public class PlayerProfileDto
+{
+    public int id;
+    public string display_name;
+    public long coins;
+    public string last_login;
+}
+
+[Serializable] public class PlayerProfileListResponse
+{
+    public PlayerProfileDto[] profiles;
+}
 
 public class AuthClient : MonoBehaviour
 {
     [SerializeField] private string baseUrl = "http://localhost:8080";
+    [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string mainSceneName = "sc_main";
 
     public string AccessToken { get; private set; }
@@ -25,9 +40,11 @@ public class AuthClient : MonoBehaviour
 
     private const string AccessKey = "access_token";
     private const string RefreshKey = "refresh_token";
+    private const string SelectedProfileKey = "selected_profile_id";
 
     private void Start()
     {
+        PlayerPrefs.DeleteAll();
         if (passwordInput != null)
             passwordInput.contentType = TMP_InputField.ContentType.Password;
 
@@ -40,26 +57,41 @@ public class AuthClient : MonoBehaviour
 
     public void OnLoginButtonClicked()
     {
-        StartCoroutine(Login(emailInput.text, passwordInput.text, (success, message) =>
+        StartCoroutine(Login(emailInput.text, passwordInput.text, (success, msg) =>
         {
             if (success)
             {
-                Debug.Log($"Login successful! Welcome {message}");
-                SceneManager.LoadScene(mainSceneName);
+                Debug.Log("Login successful!");
+                SceneManager.LoadScene(profileSelectScene);
             }
             else
             {
-                Debug.LogError($"Login failed: {message}");
+                Debug.LogError($"Login failed: {msg}");
             }
         }));
     }
 
-    public IEnumerator Login(string email, string password, Action<bool, string> done)
+    public void OnLoginAndLogProfilesButtonClicked()
     {
-        var reqBody = JsonUtility.ToJson(new GameLoginRequest { email = email, password = password });
+        StartCoroutine(Login(emailInput.text, passwordInput.text, (success, msg) =>
+        {
+            if (!success)
+            {
+                Debug.LogError($"Login failed: {msg}");
+                return;
+            }
+
+            Debug.Log("Login successful! Fetching profiles...");
+            OnLogProfilesButtonClicked();
+        }));
+    }
+
+    private IEnumerator Login(string email, string password, Action<bool, string> done)
+    {
+        var json = JsonUtility.ToJson(new GameLoginRequest { email = email, password = password });
 
         using var req = new UnityWebRequest($"{baseUrl}/api/game-login", "POST");
-        req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(reqBody));
+        req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
 
@@ -73,8 +105,7 @@ public class AuthClient : MonoBehaviour
 
         var resp = JsonUtility.FromJson<GameLoginResponse>(req.downloadHandler.text);
         SaveTokens(resp.accessToken, resp.refreshToken);
-        Debug.Log($"Received access token: {AccessToken}");
-        done(true, resp.profile.display_name);
+        done(true, "");
     }
 
     // ──────────────────────────────────────────────
@@ -90,10 +121,9 @@ public class AuthClient : MonoBehaviour
             yield break;
         }
 
-        var body = new RefreshRequestDto { refreshToken = currentRefresh };
-        string json = JsonUtility.ToJson(body);
+        var json = JsonUtility.ToJson(new RefreshRequestDto { refreshToken = currentRefresh });
 
-        using var req = new UnityWebRequest($"{baseUrl}/api/auth/refresh", "POST");
+        using var req = new UnityWebRequest($"{baseUrl}/api/game-refresh", "POST");
         req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
@@ -102,7 +132,6 @@ public class AuthClient : MonoBehaviour
 
         if (req.result != UnityWebRequest.Result.Success || req.responseCode != 200)
         {
-            Debug.LogWarning("Refresh failed, clearing tokens");
             ClearTokens();
             done?.Invoke(false);
             yield break;
@@ -110,7 +139,6 @@ public class AuthClient : MonoBehaviour
 
         var resp = JsonUtility.FromJson<RefreshResponseDto>(req.downloadHandler.text);
         SaveTokens(resp.accessToken, resp.refreshToken);
-        Debug.Log("Tokens refreshed successfully");
         done?.Invoke(true);
     }
 
@@ -126,30 +154,158 @@ public class AuthClient : MonoBehaviour
         if (string.IsNullOrEmpty(savedAccess) && string.IsNullOrEmpty(savedRefresh))
             yield break;
 
-        // Access token still valid
         if (!string.IsNullOrEmpty(savedAccess) && IsJwtNotExpired(savedAccess))
         {
             AccessToken = savedAccess;
-            Debug.Log("Valid saved access token found. Skipping login.");
-            SceneManager.LoadScene(mainSceneName);
+            SceneManager.LoadScene(profileSelectScene);
             yield break;
         }
 
-        // Access expired but refresh exists -> try refresh
         if (!string.IsNullOrEmpty(savedRefresh))
         {
             bool refreshed = false;
-            yield return RefreshToken(success => refreshed = success);
+            yield return RefreshToken(ok => refreshed = ok);
 
             if (refreshed)
+                SceneManager.LoadScene(profileSelectScene);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // PROFILES
+    // ──────────────────────────────────────────────
+
+    public IEnumerator GetMyProfiles(Action<bool, PlayerProfileDto[]> done)
+    {
+        string token = AccessToken;
+        if (string.IsNullOrEmpty(token))
+        {
+            token = PlayerPrefs.GetString(AccessKey, "");
+        }
+
+        if (string.IsNullOrEmpty(token))
+        {
+            Debug.LogError("GetProfiles failed: no access token found");
+            done(false, null);
+            yield break;
+        }
+
+        int userId = GetUserIdFromToken(token);
+        if (userId < 0)
+        {
+            Debug.LogError("GetProfiles failed: invalid token payload (missing sub)");
+            done(false, null);
+            yield break;
+        }
+
+        using var req = UnityWebRequest.Get($"{baseUrl}/api/users/{userId}/profiles");
+        req.SetRequestHeader("Authorization", $"Bearer {token}");
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError($"GetProfiles failed: {req.downloadHandler.text}");
+            done(false, null);
+            yield break;
+        }
+
+        var rawJson = req.downloadHandler.text?.Trim();
+        PlayerProfileDto[] profiles;
+
+        if (!string.IsNullOrEmpty(rawJson) && rawJson.StartsWith("["))
+        {
+            profiles = JsonHelper.FromJsonArray<PlayerProfileDto>(rawJson);
+        }
+        else
+        {
+            var resp = JsonUtility.FromJson<PlayerProfileListResponse>(rawJson);
+            profiles = resp != null ? resp.profiles : Array.Empty<PlayerProfileDto>();
+        }
+
+        Debug.Log("Profiles: " + string.Join(", ", Array.ConvertAll(profiles, p => p.display_name)));
+        done(true, profiles);
+    }
+
+    public void OnLogProfilesButtonClicked()
+    {
+        StartCoroutine(GetMyProfiles((success, profiles) =>
+        {
+            if (!success)
             {
-                Debug.Log("Auto-login via refresh succeeded.");
-                SceneManager.LoadScene(mainSceneName);
+                Debug.LogError("Profile logging failed.");
+                return;
             }
-            else
+
+            if (profiles == null || profiles.Length == 0)
             {
-                Debug.Log("Auto-login failed. User must log in again.");
+                Debug.Log("No profiles found for this user.");
+                return;
             }
+
+            Debug.Log($"Loaded {profiles.Length} profile(s):");
+            foreach (var profile in profiles)
+            {
+                if (profile == null) continue;
+                Debug.Log($"Profile id={profile.id}, display_name={profile.display_name}, coins={profile.coins}, last_login={profile.last_login}");
+            }
+        }));
+    }
+
+    public void SelectProfile(PlayerProfileDto profile)
+    {
+        PlayerPrefs.SetInt(SelectedProfileKey, profile.id);
+        PlayerPrefs.SetString("display_name", profile.display_name);
+        PlayerPrefs.Save();
+        SceneManager.LoadScene(mainSceneName);
+    }
+
+    public int GetSelectedProfileId()
+    {
+        return PlayerPrefs.GetInt(SelectedProfileKey, -1);
+    }
+
+    public int GetUserIdFromToken()
+    {
+        var token = AccessToken;
+        if (string.IsNullOrEmpty(token))
+        {
+            token = PlayerPrefs.GetString(AccessKey, "");
+        }
+        return GetUserIdFromToken(token);
+    }
+
+    private int GetUserIdFromToken(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            Debug.LogError("GetUserIdFromToken failed: no token provided");
+            return -1;
+        }
+
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+        {
+            Debug.LogError("GetUserIdFromToken failed: token does not have enough parts");
+            return -1;
+        }
+
+        try
+        {
+            var json = DecodeBase64Url(parts[1]);
+            var payload = JsonUtility.FromJson<GameJwtPayload>(json);
+            Debug.Log(json + " => sub=" + payload.sub + ", exp=" + payload.exp);
+            if (payload == null || payload.sub <= 0)
+            { 
+                Debug.LogError("GetUserIdFromToken failed: invalid token payload (missing or non-positive sub)");
+                return -1;
+            }
+            return (int)payload.sub;
+        }
+        catch
+        {
+            Debug.LogError("GetUserIdFromToken failed: error decoding token payload");
+            return -1;
         }
     }
 
@@ -176,6 +332,9 @@ public class AuthClient : MonoBehaviour
     public void Logout()
     {
         ClearTokens();
+        PlayerPrefs.DeleteKey(SelectedProfileKey);
+        PlayerPrefs.DeleteKey("display_name");
+        PlayerPrefs.Save();
     }
 
     // ──────────────────────────────────────────────
@@ -186,27 +345,18 @@ public class AuthClient : MonoBehaviour
     {
         var parts = jwt.Split('.');
         if (parts.Length < 2) return false;
-
         try
         {
-            var json = DecodeBase64Url(parts[1]);
-            var payload = JsonUtility.FromJson<JwtPayload>(json);
-            if (payload == null || payload.exp <= 0) return false;
-
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            return payload.exp > now;
+            var payload = JsonUtility.FromJson<JwtPayload>(DecodeBase64Url(parts[1]));
+            return payload != null && payload.exp > DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
         catch { return false; }
     }
 
-    private string DecodeBase64Url(string base64Url)
+    private string DecodeBase64Url(string s)
     {
-        var output = base64Url.Replace('-', '+').Replace('_', '/');
-        switch (output.Length % 4)
-        {
-            case 2: output += "=="; break;
-            case 3: output += "="; break;
-        }
-        return Encoding.UTF8.GetString(Convert.FromBase64String(output));
+        s = s.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4) { case 2: s += "=="; break; case 3: s += "="; break; }
+        return Encoding.UTF8.GetString(Convert.FromBase64String(s));
     }
 }
