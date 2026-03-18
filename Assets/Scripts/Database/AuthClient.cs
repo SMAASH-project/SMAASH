@@ -32,8 +32,12 @@ public class AuthClient : MonoBehaviour
     [SerializeField] private string baseUrl = "http://localhost:8080";
     [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string mainSceneName = "sc_main";
+    [SerializeField] private bool clearPrefsOnStartForTesting = false;
+
+    private static AuthClient _instance;
 
     public string AccessToken { get; private set; }
+    public string BaseUrl => baseUrl.TrimEnd('/');
 
     public TMP_InputField emailInput;
     public TMP_InputField passwordInput;
@@ -42,9 +46,23 @@ public class AuthClient : MonoBehaviour
     private const string RefreshKey = "refresh_token";
     private const string SelectedProfileKey = "selected_profile_id";
 
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
     private void Start()
     {
-        PlayerPrefs.DeleteAll();
+        if (clearPrefsOnStartForTesting)
+            PlayerPrefs.DeleteAll();
+
         if (passwordInput != null)
             passwordInput.contentType = TMP_InputField.ContentType.Password;
 
@@ -157,7 +175,8 @@ public class AuthClient : MonoBehaviour
         if (!string.IsNullOrEmpty(savedAccess) && IsJwtNotExpired(savedAccess))
         {
             AccessToken = savedAccess;
-            SceneManager.LoadScene(profileSelectScene);
+            if (SceneManager.GetActiveScene().name != profileSelectScene)
+                SceneManager.LoadScene(profileSelectScene);
             yield break;
         }
 
@@ -166,7 +185,7 @@ public class AuthClient : MonoBehaviour
             bool refreshed = false;
             yield return RefreshToken(ok => refreshed = ok);
 
-            if (refreshed)
+            if (refreshed && SceneManager.GetActiveScene().name != profileSelectScene)
                 SceneManager.LoadScene(profileSelectScene);
         }
     }
@@ -223,6 +242,7 @@ public class AuthClient : MonoBehaviour
             profiles = resp != null ? resp.profiles : Array.Empty<PlayerProfileDto>();
         }
 
+        Debug.Log("Response JSON: " + rawJson);
         Debug.Log("Profiles: " + string.Join(", ", Array.ConvertAll(profiles, p => p.display_name)));
         done(true, profiles);
     }
@@ -358,5 +378,15 @@ public class AuthClient : MonoBehaviour
         s = s.Replace('-', '+').Replace('_', '/');
         switch (s.Length % 4) { case 2: s += "=="; break; case 3: s += "="; break; }
         return Encoding.UTF8.GetString(Convert.FromBase64String(s));
+    }
+
+    public string GetProfilePfpUrl(int profileId)
+    {
+        return $"{baseUrl.TrimEnd('/')}/api/profiles/{profileId}/pfp";
+    }
+
+    public string GetAccessToken()
+    {
+        return PlayerPrefs.GetString(AccessKey, string.Empty);
     }
 }
