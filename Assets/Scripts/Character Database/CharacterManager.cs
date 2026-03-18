@@ -13,6 +13,7 @@ public class CharacterManager : MonoBehaviour
     public TMP_Text nameText;
     public SpriteRenderer artworkSprite;
     private int selectedOption = 0;
+    private string loadingScene = "sc_loading";
 
     // Start is called before the first frame update
     
@@ -55,7 +56,7 @@ public class CharacterManager : MonoBehaviour
 
         UpdateCharacter(selectedOption);
         Save();
-    }
+    }  
 
     //Megjelenik a kepernyon a kivalasztott karakter
     private void UpdateCharacter(int selectedOption)
@@ -74,12 +75,14 @@ public class CharacterManager : MonoBehaviour
     private void Save()
     {
         PlayerPrefs.SetInt("selectedOption", selectedOption);
+        PlayerPrefs.SetString("character_name", nameText.text);
+        PlayerPrefs.Save();
     }
 
     //Atvalt a loadingre
-    public void ChangeScene(int sceneID)
+    public void changeToLoadingScene()
     {
-        SceneManager.LoadScene(sceneID);
+        SceneManager.LoadScene(loadingScene);
     }
 
 }
