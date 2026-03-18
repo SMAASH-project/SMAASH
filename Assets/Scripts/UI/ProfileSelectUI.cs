@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class ProfileSelectUI : MonoBehaviour
 {
+    [SerializeField] private string baseUrl = "http://localhost:8080";
     [SerializeField] private AuthClient authClient;
     [SerializeField] private Transform listRoot;
     [SerializeField] private Button profileButtonPrefab;
@@ -31,6 +32,8 @@ public class ProfileSelectUI : MonoBehaviour
             Debug.LogError("ProfileSelectUI: listRoot or profileButtonPrefab is missing.");
             return;
         }
+
+        FindLogOutButton();
 
         LoadProfiles();
     }
@@ -67,11 +70,10 @@ public class ProfileSelectUI : MonoBehaviour
                 if (label != null)
                     label.text = $"{p.display_name}  •  Coins: {p.coins}";
 
-                var pfpUri = authClient.GetProfilePfpUrl(p.id); // /api/profiles/{id}/pfp
+                var pfpUri = $"{baseUrl.TrimEnd('/')}/api/profiles/{p.id}/pfp";; // /api/profiles/{id}/pfp
                 TrySetProfileAvatar(btn, pfpUri);
 
-                var captured = p;
-                btn.onClick.AddListener(() => authClient.SelectProfile(captured));
+                btn.onClick.AddListener(() => authClient.SelectProfile(p));
                 createdCount++;
             }
 
@@ -127,7 +129,7 @@ public class ProfileSelectUI : MonoBehaviour
     {
         using var request = UnityWebRequestTexture.GetTexture(uri); 
 
-        var token = authClient != null ? authClient.GetAccessToken() : string.Empty;
+        var token = authClient != null ? authClient.AccessToken : string.Empty;
         if (!string.IsNullOrWhiteSpace(token))
             request.SetRequestHeader("Authorization", $"Bearer {token}");
 
@@ -170,5 +172,19 @@ public class ProfileSelectUI : MonoBehaviour
     {
         if (statusText != null) statusText.text = message;
         Debug.Log(message);
+    }
+
+    private void FindLogOutButton()
+    {
+        var logoutBtn = GameObject.Find("LogOut")?.GetComponent<Button>();
+        if (logoutBtn != null)
+        {
+            logoutBtn.onClick.RemoveAllListeners();
+            logoutBtn.onClick.AddListener(authClient.Logout);
+        }
+        else
+        {
+            Debug.LogWarning("Logout button not found. Check exact name/case and that it is active.");
+        }
     }
 }

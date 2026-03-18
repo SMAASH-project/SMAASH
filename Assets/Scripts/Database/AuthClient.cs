@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 // ── DTOs ──
 [Serializable] public class GameLoginRequest { public string email; public string password; }
@@ -22,16 +23,14 @@ using UnityEngine.SceneManagement;
     public string last_login;
 }
 
-[Serializable] public class PlayerProfileListResponse
-{
-    public PlayerProfileDto[] profiles;
-}
+[Serializable] public class PlayerProfileListResponse { public PlayerProfileDto[] profiles; }
 
 public class AuthClient : MonoBehaviour
 {
     [SerializeField] private string baseUrl = "http://localhost:8080";
     [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string characterSelectScene = "sc_champ_select";
+    [SerializeField] private string loginScene = "sc_register";
     [SerializeField] private bool clearPrefsOnStartForTesting = false;
 
     private static AuthClient _instance;
@@ -45,6 +44,7 @@ public class AuthClient : MonoBehaviour
     private const string AccessKey = "access_token";
     private const string RefreshKey = "refresh_token";
     private const string SelectedProfileKey = "selected_profile_id";
+    private const string DisplayNameKey = "display_name";
 
     private void Awake()
     {
@@ -62,9 +62,6 @@ public class AuthClient : MonoBehaviour
     {
         if (clearPrefsOnStartForTesting)
             PlayerPrefs.DeleteAll();
-
-        if (passwordInput != null)
-            passwordInput.contentType = TMP_InputField.ContentType.Password;
 
         StartCoroutine(TryAutoLogin());
     }
@@ -86,21 +83,6 @@ public class AuthClient : MonoBehaviour
             {
                 Debug.LogError($"Login failed: {msg}");
             }
-        }));
-    }
-
-    public void OnLoginAndLogProfilesButtonClicked()
-    {
-        StartCoroutine(Login(emailInput.text, passwordInput.text, (success, msg) =>
-        {
-            if (!success)
-            {
-                Debug.LogError($"Login failed: {msg}");
-                return;
-            }
-
-            Debug.Log("Login successful! Fetching profiles...");
-            OnLogProfilesButtonClicked();
         }));
     }
 
@@ -133,6 +115,7 @@ public class AuthClient : MonoBehaviour
     private IEnumerator RefreshToken(Action<bool> done)
     {
         string currentRefresh = PlayerPrefs.GetString(RefreshKey, "");
+        
         if (string.IsNullOrEmpty(currentRefresh))
         {
             done?.Invoke(false);
@@ -247,52 +230,12 @@ public class AuthClient : MonoBehaviour
         done(true, profiles);
     }
 
-    public void OnLogProfilesButtonClicked()
-    {
-        StartCoroutine(GetMyProfiles((success, profiles) =>
-        {
-            if (!success)
-            {
-                Debug.LogError("Profile logging failed.");
-                return;
-            }
-
-            if (profiles == null || profiles.Length == 0)
-            {
-                Debug.Log("No profiles found for this user.");
-                return;
-            }
-
-            Debug.Log($"Loaded {profiles.Length} profile(s):");
-            foreach (var profile in profiles)
-            {
-                if (profile == null) continue;
-                Debug.Log($"Profile id={profile.id}, display_name={profile.display_name}, coins={profile.coins}, last_login={profile.last_login}");
-            }
-        }));
-    }
-
     public void SelectProfile(PlayerProfileDto profile)
     {
         PlayerPrefs.SetInt(SelectedProfileKey, profile.id);
-        PlayerPrefs.SetString("display_name", profile.display_name);
+        PlayerPrefs.SetString(DisplayNameKey, profile.display_name);
         PlayerPrefs.Save();
         SceneManager.LoadScene(characterSelectScene);
-    }
-
-    public int GetSelectedProfileId()
-    {
-        return PlayerPrefs.GetInt(SelectedProfileKey, -1);
-    }
-
-    public int GetUserIdFromToken()
-    {
-        var token = AccessToken;
-        if (string.IsNullOrEmpty(token))
-        {
-            token = PlayerPrefs.GetString(AccessKey, "");
-        }
-        return GetUserIdFromToken(token);
     }
 
     private int GetUserIdFromToken(string token)
@@ -320,7 +263,9 @@ public class AuthClient : MonoBehaviour
                 Debug.LogError("GetUserIdFromToken failed: invalid token payload (missing or non-positive sub)");
                 return -1;
             }
+            Debug.Log("Extracted user ID from token: " + (int)payload.sub);
             return (int)payload.sub;
+            
         }
         catch
         {
@@ -349,12 +294,18 @@ public class AuthClient : MonoBehaviour
         PlayerPrefs.Save();
     }
 
+    private void ClearProfileSelection()
+    {
+        PlayerPrefs.DeleteKey(SelectedProfileKey);
+        PlayerPrefs.DeleteKey(DisplayNameKey);
+        PlayerPrefs.Save();
+    }
+
     public void Logout()
     {
         ClearTokens();
-        PlayerPrefs.DeleteKey(SelectedProfileKey);
-        PlayerPrefs.DeleteKey("display_name");
-        PlayerPrefs.Save();
+        ClearProfileSelection();
+        SceneManager.LoadScene(loginScene);
     }
 
     // ──────────────────────────────────────────────
@@ -378,15 +329,5 @@ public class AuthClient : MonoBehaviour
         s = s.Replace('-', '+').Replace('_', '/');
         switch (s.Length % 4) { case 2: s += "=="; break; case 3: s += "="; break; }
         return Encoding.UTF8.GetString(Convert.FromBase64String(s));
-    }
-
-    public string GetProfilePfpUrl(int profileId)
-    {
-        return $"{baseUrl.TrimEnd('/')}/api/profiles/{profileId}/pfp";
-    }
-
-    public string GetAccessToken()
-    {
-        return PlayerPrefs.GetString(AccessKey, string.Empty);
     }
 }
