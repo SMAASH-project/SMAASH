@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -338,10 +337,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1343119110}
-        m_TargetAssemblyTypeName: ChangeToMainScreen, Assembly-CSharp
-        m_MethodName: MoveToScene
-        m_Mode: 3
+      - m_Target: {fileID: 1343119109}
+        m_TargetAssemblyTypeName: CharacterManager, Assembly-CSharp
+        m_MethodName: changeToLoadingScene
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -1064,7 +1063,6 @@ GameObject:
   - component: {fileID: 1343119108}
   - component: {fileID: 1343119107}
   - component: {fileID: 1343119109}
-  - component: {fileID: 1343119110}
   m_Layer: 0
   m_Name: selected_character
   m_TagString: Untagged
@@ -1154,18 +1152,6 @@ MonoBehaviour:
   characterDatabase: {fileID: 11400000, guid: be72cdc05ea224ba99e86a725657c0c0, type: 2}
   nameText: {fileID: 552240181}
   artworkSprite: {fileID: 1343119107}
---- !u!114 &1343119110
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1343119106}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: baea2cdac21084b4f8674e516e510457, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
