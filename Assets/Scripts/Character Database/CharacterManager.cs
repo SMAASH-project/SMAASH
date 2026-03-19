@@ -12,14 +12,19 @@ public class CharacterManager : MonoBehaviour
 
     public TMP_Text nameText;
     public SpriteRenderer artworkSprite;
+    public Button startButton;
+    
     private int selectedOption = 0;
     private string loadingScene = "sc_loading";
 
+    [SerializeField] private NetworkHandler networkHandler;
     // Start is called before the first frame update
     
     //Lementett karakter kivalasztasa
     void Start()
     {
+        networkHandler = FindObjectOfType<NetworkHandler>();
+        startButton.onClick.AddListener(changeToWaitingRoom);
         if(!PlayerPrefs.HasKey("selectedOption"))
         {
             selectedOption = 0;
@@ -80,9 +85,9 @@ public class CharacterManager : MonoBehaviour
     }
 
     //Atvalt a loadingre
-    public void changeToLoadingScene()
+    public void changeToWaitingRoom()
     {
-        SceneManager.LoadScene(loadingScene);
+        networkHandler.RoomCreateAndJoin();
     }
 
 }

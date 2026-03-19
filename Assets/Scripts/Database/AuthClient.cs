@@ -29,7 +29,7 @@ public class AuthClient : MonoBehaviour
 {
     [SerializeField] private string baseUrl = "http://localhost:8080";
     [SerializeField] private string profileSelectScene = "sc_profile_select";
-    [SerializeField] private string characterSelectScene = "sc_champ_select";
+    [SerializeField] private string loadingSceneName = "sc_loading";
     [SerializeField] private string loginScene = "sc_register";
     [SerializeField] private bool clearPrefsOnStartForTesting = false;
 
@@ -235,7 +235,7 @@ public class AuthClient : MonoBehaviour
         PlayerPrefs.SetInt(SelectedProfileKey, profile.id);
         PlayerPrefs.SetString(DisplayNameKey, profile.display_name);
         PlayerPrefs.Save();
-        SceneManager.LoadScene(characterSelectScene);
+        SceneManager.LoadScene(loadingSceneName);
     }
 
     private int GetUserIdFromToken(string token)
