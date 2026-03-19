@@ -354,7 +354,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseUrl: http://localhost:8080
   profileSelectScene: sc_profile_select
-  mainSceneName: sc_main
+  characterSelectScene: sc_champ_select
+  loginScene: sc_register
   clearPrefsOnStartForTesting: 0
   emailInput: {fileID: 1500917661}
   passwordInput: {fileID: 1034027055}
@@ -1112,8 +1113,8 @@ MonoBehaviour:
   m_VerticalScrollbarEventHandler: {fileID: 0}
   m_LayoutGroup: {fileID: 0}
   m_ScrollSensitivity: 1
-  m_ContentType: 0
-  m_InputType: 0
+  m_ContentType: 7
+  m_InputType: 2
   m_AsteriskChar: 42
   m_KeyboardType: 0
   m_LineType: 0

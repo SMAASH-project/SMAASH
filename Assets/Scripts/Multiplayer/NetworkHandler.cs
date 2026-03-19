@@ -5,12 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 {
     [Header("Setup")]
     public Character_Database characterDatabase;
     [SerializeField] private string _gameSceneName = "sc_main";
+    [SerializeField] private string _characterSelectSceneName = "sc_champ_select";
+    [SerializeField] private string _waitingRoomSceneName = "sc_waiting_room";
 
     [Header("Spawn Points")]
     [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
@@ -45,6 +48,31 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     {
         createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
         joinInput = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
+    }
+
+    public void SelectCharacterAsCreator()
+    {
+        PlayerPrefs.SetString("creatingRoom", "true");
+        SceneManager.LoadScene(_characterSelectSceneName);
+    }
+
+    public void SelectCharacterAsJoiner()
+    {
+        PlayerPrefs.SetString("creatingRoom", "false");
+        SceneManager.LoadScene(_characterSelectSceneName);
+    }
+
+    public void RoomCreateAndJoin()
+    {
+        SceneManager.LoadScene(_waitingRoomSceneName);
+        if(PlayerPrefs.GetString("creatingRoom", "false") == "true")
+        {
+            CreateRoom();
+        }
+        else
+        {
+            JoinRoom();
+        }
     }
 
     public void CreateRoom() => StartGame(GameMode.Host, createInput.text);
@@ -161,6 +189,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     #region Character Selection Logic
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
+        int playerCount = runner.ActivePlayers.Count();
+        UpdateWaitingRoomStatus(playerCount);
         if (player == runner.LocalPlayer)
         {
             int mySelection = PlayerPrefs.GetInt("selectedOption", 0);
@@ -170,6 +200,20 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             } else {
                 runner.SendReliableDataToServer(default, BitConverter.GetBytes(mySelection));
             }
+        }
+    }
+
+    private void UpdateWaitingRoomStatus(int playerCount)
+    {
+        TMP_Text waitingRoomStatusText = GameObject.Find("WaitingRoomStatusText")?.GetComponent<TMP_Text>();
+        if (waitingRoomStatusText != null)
+        {    
+            waitingRoomStatusText.text = "Waiting for other player to join... (" + playerCount + "/2)";
+            Debug.Log($"[NetworkHandler] Updated waiting room status: {playerCount}/2 players joined.");
+        }
+        else
+        {
+            Debug.LogWarning("WaitingRoomStatusText not found in scene!");
         }
     }
 

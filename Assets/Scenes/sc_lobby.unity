@@ -568,8 +568,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 858253547}
-        m_TargetAssemblyTypeName: CreateAndJoinRooms, Assembly-CSharp
-        m_MethodName: CreateRoom
+        m_TargetAssemblyTypeName: NetworkHandler, Assembly-CSharp
+        m_MethodName: SelectCharacterAsCreator
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -835,8 +835,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 858253547}
-        m_TargetAssemblyTypeName: CreateAndJoinRooms, Assembly-CSharp
-        m_MethodName: JoinRoom
+        m_TargetAssemblyTypeName: NetworkHandler, Assembly-CSharp
+        m_MethodName: SelectCharacterAsJoiner
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1023,6 +1023,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterDatabase: {fileID: 11400000, guid: be72cdc05ea224ba99e86a725657c0c0, type: 2}
   _gameSceneName: sc_main
+  _characterSelectSceneName: sc_champ_select
   player1SpawnPointName: Player1_SpawnPoint
   player2SpawnPointName: Player2_SpawnPoint
 --- !u!114 &858253548
