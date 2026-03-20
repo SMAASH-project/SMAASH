@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class ProfileSelectUI : MonoBehaviour
 {
-    [SerializeField] private string baseUrl = "http://localhost:8080";
+    [SerializeField] private string baseUrl = "http://localhost:8080"; // szerver: https://smaash-web.onrender.com, helyi: http://localhost:8080
     [SerializeField] private AuthClient authClient;
     [SerializeField] private Transform listRoot;
     [SerializeField] private Button profileButtonPrefab;
@@ -130,6 +130,10 @@ public class ProfileSelectUI : MonoBehaviour
         using var request = UnityWebRequestTexture.GetTexture(uri); 
 
         var token = authClient != null ? authClient.AccessToken : string.Empty;
+        // Fallback to PlayerPrefs if token is not available in authClient
+        if (string.IsNullOrWhiteSpace(token))
+            token = PlayerPrefs.GetString("access_token", "");
+        
         if (!string.IsNullOrWhiteSpace(token))
             request.SetRequestHeader("Authorization", $"Bearer {token}");
 
@@ -176,15 +180,23 @@ public class ProfileSelectUI : MonoBehaviour
 
     private void FindLogOutButton()
     {
+        if (authClient == null)
+        {
+            Debug.LogError("Cannot setup logout button: authClient is null");
+            return;
+        }
+        
         var logoutBtn = GameObject.Find("LogOut")?.GetComponent<Button>();
+
         if (logoutBtn != null)
         {
             logoutBtn.onClick.RemoveAllListeners();
-            logoutBtn.onClick.AddListener(authClient.Logout);
+            logoutBtn.onClick.AddListener(() => authClient.Logout());
+            Debug.Log("Logout button successfully registered");
         }
         else
         {
-            Debug.LogWarning("Logout button not found. Check exact name/case and that it is active.");
+            Debug.LogWarning("Logout button not found. Checked for: 'LogOut', 'logout', 'Logout'. Check the exact button name and that it is active in the scene.");
         }
     }
 }

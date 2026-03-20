@@ -23,7 +23,9 @@ public class CharacterManager : MonoBehaviour
     //Lementett karakter kivalasztasa
     void Start()
     {
-        networkHandler = FindObjectOfType<NetworkHandler>();
+        networkHandler = NetworkHandler.Instance != null
+            ? NetworkHandler.Instance
+            : FindObjectOfType<NetworkHandler>();
         startButton.onClick.AddListener(changeToWaitingRoom);
         if(!PlayerPrefs.HasKey("selectedOption"))
         {
@@ -87,6 +89,19 @@ public class CharacterManager : MonoBehaviour
     //Atvalt a loadingre
     public void changeToWaitingRoom()
     {
+        if (networkHandler == null)
+        {
+            networkHandler = NetworkHandler.Instance != null
+                ? NetworkHandler.Instance
+                : FindObjectOfType<NetworkHandler>();
+        }
+
+        if (networkHandler == null)
+        {
+            Debug.LogError("[CharacterManager] NetworkHandler not found when trying to start matchmaking.");
+            return;
+        }
+
         networkHandler.RoomCreateAndJoin();
     }
 
