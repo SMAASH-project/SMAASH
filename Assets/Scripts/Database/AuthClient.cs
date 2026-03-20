@@ -27,7 +27,7 @@ using UnityEngine.UI;
 
 public class AuthClient : MonoBehaviour
 {
-    [SerializeField] private string baseUrl = "http://localhost:8080";
+    [SerializeField] private string baseUrl = "http://localhost:8080"; // szerver: https://smaash-web.onrender.com
     [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string loadingSceneName = "sc_loading";
     [SerializeField] private string loginScene = "sc_register";
@@ -50,12 +50,29 @@ public class AuthClient : MonoBehaviour
     {
         if (_instance != null && _instance != this)
         {
+            // If we're in the login scene, destroy the old DontDestroyOnLoad instance
+            // and keep this scene-local instance instead
+            if (SceneManager.GetActiveScene().name == loginScene)
+            {
+                Debug.LogWarning("AuthClient instance being re-created on login scene. Destroying old DontDestroyOnLoad instance.");
+                Destroy(_instance.gameObject);
+                _instance = this;
+                // Don't mark as DontDestroyOnLoad - let it be destroyed with the scene
+                RestoreAccessTokenFromPrefs();
+                StartCoroutine(TryAutoLogin());
+                return;
+            }
+
+            // For other scenes, keep the existing singleton
+            Debug.LogWarning("Multiple AuthClient instances detected. Destroying duplicate.");
             Destroy(gameObject);
             return;
         }
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+        RestoreAccessTokenFromPrefs();
+        StartCoroutine(TryAutoLogin());
     }
 
     private void Start()
@@ -63,7 +80,16 @@ public class AuthClient : MonoBehaviour
         if (clearPrefsOnStartForTesting)
             PlayerPrefs.DeleteAll();
 
-        StartCoroutine(TryAutoLogin());
+        //StartCoroutine(TryAutoLogin());
+    }
+
+    private void OnDestroy()
+    {
+        // Clean up the singleton reference if this is the current instance
+        if (_instance == this)
+        {
+            _instance = null;
+        }
     }
 
     // ──────────────────────────────────────────────
@@ -301,10 +327,26 @@ public class AuthClient : MonoBehaviour
         PlayerPrefs.Save();
     }
 
+    private void RestoreAccessTokenFromPrefs()
+    {
+        string savedAccess = PlayerPrefs.GetString(AccessKey, "");
+        if (!string.IsNullOrEmpty(savedAccess))
+        {
+            AccessToken = savedAccess;
+        }
+    }
+
     public void Logout()
     {
+        _instance = null;  // Clear the singleton reference before logout
         ClearTokens();
         ClearProfileSelection();
+
+        if (NetworkHandler.Instance != null)
+        {
+            NetworkHandler.Instance.DisposeForLogout();
+        }
+
         SceneManager.LoadScene(loginScene);
     }
 

@@ -1,11 +1,14 @@
 using Fusion;
 using Fusion.Sockets;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 {
@@ -14,12 +17,16 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string _gameSceneName = "sc_main";
     [SerializeField] private string _characterSelectSceneName = "sc_champ_select";
     [SerializeField] private string _waitingRoomSceneName = "sc_waiting_room";
+    [SerializeField] private string _lobbySceneName = "sc_lobby";
+    [SerializeField] private string _loginSceneName = "sc_register";
 
     [Header("Spawn Points")]
     [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
     [SerializeField] private string player2SpawnPointName = "Player2_SpawnPoint";
 
     private static NetworkHandler _instance;
+    public static NetworkHandler Instance => _instance;
+    
     private NetworkRunner _runner;
     private TMP_InputField createInput;
     private TMP_InputField joinInput;
@@ -31,23 +38,53 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     private string _lastRoomName;
     private bool _isConnecting = false;
     private bool _sceneLoadRequested = false;
+    private bool _isCancellingMatchmaking = false;
+    private bool _isDisposing = false;
 
     private void Awake()
     {
         if (_instance != null && _instance != this)
         {
-            Destroy(gameObject);
-            return;
+            string activeSceneName = SceneManager.GetActiveScene().name;
+
+            if (activeSceneName == _lobbySceneName)
+            {
+                Debug.Log("[NetworkHandler] Replacing previous singleton with lobby scene instance.");
+                _instance.DisposeForLogout();
+                _instance = this;
+            }
+            else
+            {
+                Destroy(gameObject);
+                return;
+            }
         }
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == _loginSceneName && _instance == this)
+        {
+            _ = ShutdownAndDestroyAsync();
+        }
+    }
+
     void Start()
     {
-        createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
-        joinInput = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
+        RefreshRoomInputReferences();
     }
 
     public void SelectCharacterAsCreator()
@@ -64,33 +101,127 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     public void RoomCreateAndJoin()
     {
+        // Save the room name before changing scenes
+        string roomName = GetPendingRoomName();
+        
+        PlayerPrefs.SetString("roomName", roomName);
+        PlayerPrefs.Save();
+        
         SceneManager.LoadScene(_waitingRoomSceneName);
+        
+        // Use a coroutine to create/join room after scene loads
+        StartCoroutine(CreateOrJoinRoomAfterSceneLoad());
+    }
+
+    private IEnumerator CreateOrJoinRoomAfterSceneLoad()
+    {
+        // Wait for the scene to load
+        yield return null;
+        yield return null;
+        
+        string roomName = PlayerPrefs.GetString("roomName", "DefaultRoom");
+        
         if(PlayerPrefs.GetString("creatingRoom", "false") == "true")
         {
-            CreateRoom();
+            Debug.Log("[NetworkHandler] Creating room: " + roomName);
+            StartGame(GameMode.Host, roomName);
         }
         else
         {
-            JoinRoom();
+            Debug.Log("[NetworkHandler] Joining room: " + roomName);
+            StartGame(GameMode.Client, roomName);
         }
     }
 
-    public void CreateRoom() => StartGame(GameMode.Host, createInput.text);
-    public void JoinRoom() => StartGame(GameMode.Client, joinInput.text);
-
-    async void StartGame(GameMode mode, string roomName)
+    public void CancelMatchmaking()
     {
-        if (_isConnecting) return;
+        if (_isDisposing)
+        {
+            return;
+        }
 
-        _isConnecting = true;
-        _lastGameMode = mode;
-        _lastRoomName = roomName;
+        Debug.Log("[NetworkHandler] Player cancelled matchmaking");
+        _ = CancelMatchmakingAsync();
+    }
+
+    private async Task CancelMatchmakingAsync()
+    {
+        if (_isCancellingMatchmaking)
+        {
+            return;
+        }
+
+        _isCancellingMatchmaking = true;
+        _isConnecting = false;
+        _sceneLoadRequested = false;
 
         try
         {
             if (_runner != null)
             {
-                Destroy(_runner.gameObject);
+                Debug.Log("[NetworkHandler] Shutting down network runner...");
+
+                var runnerToShutdown = _runner;
+                _runner = null;
+
+                await runnerToShutdown.Shutdown(destroyGameObject: true, shutdownReason: ShutdownReason.Ok);
+            }
+
+            _playerSelections.Clear();
+            _spawnedCharacters.Clear();
+
+            // Load back to lobby
+            if (!string.IsNullOrEmpty(_lobbySceneName))
+            {
+                Debug.Log("[NetworkHandler] Loading lobby scene: " + _lobbySceneName);
+                var asyncLoad = SceneManager.LoadSceneAsync(_lobbySceneName);
+
+                while (asyncLoad != null && !asyncLoad.isDone)
+                {
+                    await Task.Yield();
+                }
+
+                Debug.Log("[NetworkHandler] Lobby scene loaded successfully");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[NetworkHandler] Cancel matchmaking failed: {ex.Message}");
+        }
+        finally
+        {
+            _isConnecting = false;
+            _isCancellingMatchmaking = false;
+        }
+    }
+
+    public void CreateRoom()
+    {
+        RefreshRoomInputReferences();
+        string roomName = createInput != null ? createInput.text : "DefaultRoom";
+        StartGame(GameMode.Host, roomName);
+    }
+
+    public void JoinRoom()
+    {
+        RefreshRoomInputReferences();
+        string roomName = joinInput != null ? joinInput.text : string.Empty;
+        StartGame(GameMode.Client, roomName);
+    }
+
+    async void StartGame(GameMode mode, string roomName)
+    {
+        if (_isConnecting || _isCancellingMatchmaking || _isDisposing) return;
+
+        _isConnecting = true;
+        _lastGameMode = mode;
+        _lastRoomName = string.IsNullOrWhiteSpace(roomName) ? "DefaultRoom" : roomName.Trim();
+
+        try
+        {
+            if (_runner != null)
+            {
+                await _runner.Shutdown(destroyGameObject: true, shutdownReason: ShutdownReason.Ok);
                 _runner = null;
             }
 
@@ -106,7 +237,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             await _runner.StartGame(new StartGameArgs
             {
                 GameMode = mode,
-                SessionName = roomName,
+                SessionName = _lastRoomName,
                 PlayerCount = 2,
                 SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
             });
@@ -116,6 +247,84 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             Debug.LogError($"Failed to start game: {ex.Message}");
             _isConnecting = false;
         }
+    }
+
+    public void DisposeForLogout()
+    {
+        _ = ShutdownAndDestroyAsync();
+    }
+
+    private async Task ShutdownAndDestroyAsync()
+    {
+        if (_isDisposing)
+        {
+            return;
+        }
+
+        _isDisposing = true;
+        _isConnecting = false;
+        _sceneLoadRequested = false;
+        _isCancellingMatchmaking = false;
+
+        try
+        {
+            if (_runner != null)
+            {
+                var runnerToShutdown = _runner;
+                _runner = null;
+                await runnerToShutdown.Shutdown(destroyGameObject: true, shutdownReason: ShutdownReason.Ok);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[NetworkHandler] Shutdown during dispose failed: {ex.Message}");
+        }
+
+        _playerSelections.Clear();
+        _spawnedCharacters.Clear();
+
+        if (_instance == this)
+        {
+            _instance = null;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void RefreshRoomInputReferences()
+    {
+        if (createInput == null)
+        {
+            createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
+        }
+
+        if (joinInput == null)
+        {
+            joinInput = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
+        }
+    }
+
+    private string GetPendingRoomName()
+    {
+        bool creatingRoom = PlayerPrefs.GetString("creatingRoom", "false") == "true";
+        RefreshRoomInputReferences();
+
+        if (creatingRoom)
+        {
+            if (createInput != null && !string.IsNullOrWhiteSpace(createInput.text))
+            {
+                return createInput.text.Trim();
+            }
+
+            return "DefaultRoom";
+        }
+
+        if (joinInput != null)
+        {
+            return joinInput.text.Trim();
+        }
+
+        return string.Empty;
     }
 
     // --- INPUT BRIDGE ---

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class ChangeToMainScreen : MonoBehaviour
+public class MoveToScreen : MonoBehaviour
 {
-    public void MoveToScene(int sceneID)
+    public void MoveToScene(string sceneName)
     {
-        SceneManager.LoadScene(sceneID);
+        SceneManager.LoadScene(sceneName);
     }
 }
