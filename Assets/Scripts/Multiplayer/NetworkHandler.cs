@@ -36,6 +36,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     private GameMode _lastGameMode;
     private string _lastRoomName;
+    private GameMode _pendingCharacterSelectMode = GameMode.Host;
+    private string _pendingRoomName = "DefaultRoom";
     private bool _isConnecting = false;
     private bool _sceneLoadRequested = false;
     private bool _isCancellingMatchmaking = false;
@@ -89,23 +91,29 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     public void SelectCharacterAsCreator()
     {
-        PlayerPrefs.SetString("creatingRoom", "true");
+        _pendingCharacterSelectMode = GameMode.Host;
+        RefreshRoomInputReferences();
+        _pendingRoomName = createInput != null && !string.IsNullOrWhiteSpace(createInput.text)
+            ? createInput.text.Trim()
+            : "DefaultRoom";
         SceneManager.LoadScene(_characterSelectSceneName);
     }
 
     public void SelectCharacterAsJoiner()
     {
-        PlayerPrefs.SetString("creatingRoom", "false");
+        _pendingCharacterSelectMode = GameMode.Client;
+        RefreshRoomInputReferences();
+        _pendingRoomName = joinInput != null ? joinInput.text.Trim() : string.Empty;
         SceneManager.LoadScene(_characterSelectSceneName);
     }
 
     public void RoomCreateAndJoin()
     {
-        // Save the room name before changing scenes
-        string roomName = GetPendingRoomName();
-        
-        PlayerPrefs.SetString("roomName", roomName);
-        PlayerPrefs.Save();
+        if (_pendingCharacterSelectMode == GameMode.Single)
+        {
+            StartGame(GameMode.Single, "LocalTestRoom");
+            return;
+        }
         
         SceneManager.LoadScene(_waitingRoomSceneName);
         
@@ -119,9 +127,9 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         yield return null;
         yield return null;
         
-        string roomName = PlayerPrefs.GetString("roomName", "DefaultRoom");
-        
-        if(PlayerPrefs.GetString("creatingRoom", "false") == "true")
+        string roomName = string.IsNullOrWhiteSpace(_pendingRoomName) ? "DefaultRoom" : _pendingRoomName;
+
+        if (_pendingCharacterSelectMode == GameMode.Host)
         {
             Debug.Log("[NetworkHandler] Creating room: " + roomName);
             StartGame(GameMode.Host, roomName);
@@ -209,6 +217,16 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         StartGame(GameMode.Client, roomName);
     }
 
+    public void StartSinglePlayerTest()
+    {
+        if (_isDisposing) return;
+
+        Debug.Log("[NetworkHandler] Starting single-player test mode via character select");
+        _pendingCharacterSelectMode = GameMode.Single;
+        _pendingRoomName = "LocalTestRoom";
+        SceneManager.LoadScene(_characterSelectSceneName);
+    }
+
     async void StartGame(GameMode mode, string roomName)
     {
         if (_isConnecting || _isCancellingMatchmaking || _isDisposing) return;
@@ -238,7 +256,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             {
                 GameMode = mode,
                 SessionName = _lastRoomName,
-                PlayerCount = 2,
+                PlayerCount = mode == GameMode.Single ? 1 : 2,
                 SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
             });
         }
@@ -302,29 +320,6 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         {
             joinInput = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
         }
-    }
-
-    private string GetPendingRoomName()
-    {
-        bool creatingRoom = PlayerPrefs.GetString("creatingRoom", "false") == "true";
-        RefreshRoomInputReferences();
-
-        if (creatingRoom)
-        {
-            if (createInput != null && !string.IsNullOrWhiteSpace(createInput.text))
-            {
-                return createInput.text.Trim();
-            }
-
-            return "DefaultRoom";
-        }
-
-        if (joinInput != null)
-        {
-            return joinInput.text.Trim();
-        }
-
-        return string.Empty;
     }
 
     // --- INPUT BRIDGE ---
@@ -405,6 +400,14 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             int mySelection = PlayerPrefs.GetInt("selectedOption", 0);
             if (runner.IsServer) {
                 _playerSelections.Add(player, mySelection);
+
+                if (runner.GameMode == GameMode.Single && !_sceneLoadRequested)
+                {
+                    _sceneLoadRequested = true;
+                    runner.LoadScene(_gameSceneName);
+                    return;
+                }
+
                 CheckStartCondition(runner);
             } else {
                 runner.SendReliableDataToServer(default, BitConverter.GetBytes(mySelection));
