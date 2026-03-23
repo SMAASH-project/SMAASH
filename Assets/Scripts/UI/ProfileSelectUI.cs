@@ -6,7 +6,6 @@ using UnityEngine.UI;
 
 public class ProfileSelectUI : MonoBehaviour
 {
-    [SerializeField] private string baseUrl = "https://smaash-web.onrender.com"; // szerver: https://smaash-web.onrender.com, helyi: http://localhost:8080
     [SerializeField] private AuthClient authClient;
     [SerializeField] private Transform listRoot;
     [SerializeField] private Button profileButtonPrefab;
@@ -70,7 +69,7 @@ public class ProfileSelectUI : MonoBehaviour
                 if (label != null)
                     label.text = $"{p.display_name}  •  Coins: {p.coins}";
 
-                var pfpUri = $"{baseUrl.TrimEnd('/')}/api/profiles/{p.id}/pfp";; // /api/profiles/{id}/pfp
+                var pfpUri = $"{authClient.BaseUrl}/api/profiles/{p.id}/pfp"; // /api/profiles/{id}/pfp
                 TrySetProfileAvatar(btn, pfpUri);
 
                 btn.onClick.AddListener(() => authClient.SelectProfile(p));
