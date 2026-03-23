@@ -27,7 +27,11 @@ using UnityEngine.UI;
 
 public class AuthClient : MonoBehaviour
 {
-    [SerializeField] private string baseUrl = "https://smaash-web.onrender.com"; // szerver: https://smaash-web.onrender.com, helyi: http://localhost:8080
+    [Header("API")]
+    [SerializeField] private bool useLocalhost = false;
+    [SerializeField] private string localhostUrl = "http://localhost:8080";
+    [SerializeField] private string deployedUrl = "https://smaash-web.onrender.com";
+
     [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string loadingSceneName = "sc_loading";
     [SerializeField] private string loginScene = "sc_register";
@@ -36,7 +40,7 @@ public class AuthClient : MonoBehaviour
     private static AuthClient _instance;
 
     public string AccessToken { get; private set; }
-    public string BaseUrl => baseUrl.TrimEnd('/');
+    public string BaseUrl => (useLocalhost ? localhostUrl : deployedUrl).TrimEnd('/');
 
     public TMP_InputField emailInput;
     public TMP_InputField passwordInput;
@@ -71,6 +75,12 @@ public class AuthClient : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+        
+        // Debug: Show active backend
+        string activeBackend = useLocalhost ? "LOCALHOST" : "DEPLOYED";
+        string activeUrl = BaseUrl;
+        Debug.Log($"[AuthClient] Backend: {activeBackend} → {activeUrl}");
+        
         RestoreAccessTokenFromPrefs();
         StartCoroutine(TryAutoLogin());
     }
@@ -116,7 +126,7 @@ public class AuthClient : MonoBehaviour
     {
         var json = JsonUtility.ToJson(new GameLoginRequest { email = email, password = password });
 
-        using var req = new UnityWebRequest($"{baseUrl}/api/game-login", "POST");
+        using var req = new UnityWebRequest($"{BaseUrl}/api/game-login", "POST");
         req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
@@ -150,7 +160,7 @@ public class AuthClient : MonoBehaviour
 
         var json = JsonUtility.ToJson(new RefreshRequestDto { refreshToken = currentRefresh });
 
-        using var req = new UnityWebRequest($"{baseUrl}/api/game-refresh", "POST");
+        using var req = new UnityWebRequest($"{BaseUrl}/api/game-refresh", "POST");
         req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
@@ -226,7 +236,7 @@ public class AuthClient : MonoBehaviour
             yield break;
         }
 
-        using var req = UnityWebRequest.Get($"{baseUrl}/api/users/{userId}/profiles");
+        using var req = UnityWebRequest.Get($"{BaseUrl}/api/users/{userId}/profiles");
         req.SetRequestHeader("Authorization", $"Bearer {token}");
 
         yield return req.SendWebRequest();

@@ -86,30 +86,15 @@ public class MeleeAttack : NetworkBehaviour
 
     private IEnumerator PlayAttackAnimation()
     {
-        animator.SetBool("isAttacking", true);
+        if (animator == null)
+            yield break;
+
         animator.SetBool("isJumping", false);
+        animator.ResetTrigger("Attack1");
         animator.SetTrigger("Attack1");
 
-        // Wait one frame for the animator to transition
+        // Let the Animator state machine handle returning to idle via exit time.
         yield return null;
-        
-        animator.ResetTrigger("Attack1");
-        
-        // Get the correct animation length
-        float animLength = 0f;
-        if (animator.IsInTransition(0))
-        {
-            animLength = animator.GetNextAnimatorStateInfo(0).length;
-        }
-        else
-        {
-            animLength = animator.GetCurrentAnimatorStateInfo(0).length;
-        }
-        
-        yield return new WaitForSeconds(animLength);
-        
-        animator.SetBool("isAttacking", false);
-        Debug.Log("Is attacking: " + animator.GetBool("isAttacking"));
     }
 
     IEnumerator AttackCooldown()
