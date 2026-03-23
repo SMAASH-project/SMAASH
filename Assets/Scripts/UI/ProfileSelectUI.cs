@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class ProfileSelectUI : MonoBehaviour
 {
-    [SerializeField] private string baseUrl = "http://localhost:8080"; // szerver: https://smaash-web.onrender.com, helyi: http://localhost:8080
+    [SerializeField] private string baseUrl = "https://smaash-web.onrender.com"; // szerver: https://smaash-web.onrender.com, helyi: http://localhost:8080
     [SerializeField] private AuthClient authClient;
     [SerializeField] private Transform listRoot;
     [SerializeField] private Button profileButtonPrefab;

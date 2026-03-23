@@ -243,7 +243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca3d628aa2fc24e68a26fa0c60f879c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseUrl: http://localhost:8080
+  baseUrl: https://smaash-web.onrender.com
   authClient: {fileID: 0}
   listRoot: {fileID: 2103243162}
   profileButtonPrefab: {fileID: 7667959562958649366, guid: b6cc0bb1bd47a4e369bbeba6c4d66597, type: 3}

@@ -27,7 +27,7 @@ using UnityEngine.UI;
 
 public class AuthClient : MonoBehaviour
 {
-    [SerializeField] private string baseUrl = "http://localhost:8080"; // szerver: https://smaash-web.onrender.com
+    [SerializeField] private string baseUrl = "https://smaash-web.onrender.com"; // szerver: https://smaash-web.onrender.com, helyi: http://localhost:8080
     [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string loadingSceneName = "sc_loading";
     [SerializeField] private string loginScene = "sc_register";
