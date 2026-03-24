@@ -135,7 +135,6 @@ public class PlayerHealth : NetworkBehaviour
     [Header("Settings")]
     public int maxHealth = 100;
     
-    // The "Source of Truth" for health
     [Networked, OnChangedRender(nameof(OnHealthChanged))]
     private int CurrentHealth { get; set; }
 
@@ -184,13 +183,13 @@ public class PlayerHealth : NetworkBehaviour
         if (CurrentHealth <= 0)
         {
             isDead = true;
-            RPC_BroadcastDeath();
+            RPC_BroadcastDeath(Object.InputAuthority.PlayerId);
         }
     }
     
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
-    private void RPC_BroadcastDeath()
+    private void RPC_BroadcastDeath(int deadPlayerId)
     {
         if (animator) animator.SetBool("isDead", true);
         if (meleeAttack) meleeAttack.enabled = false;
@@ -199,6 +198,11 @@ public class PlayerHealth : NetworkBehaviour
         var rb = GetComponent<Rigidbody2D>();
         Debug.Log("Rigidbody: " + rb);
         if (rb) rb.constraints = RigidbodyConstraints2D.FreezeAll;
+
+        if (NetworkHandler.Instance != null)
+        {
+            NetworkHandler.Instance.HandleMatchEnded(deadPlayerId);
+        }
     }
 
     // Fusion 2 call whenever CurrentHealth changes over the network

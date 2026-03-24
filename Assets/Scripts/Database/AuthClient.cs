@@ -274,6 +274,35 @@ public class AuthClient : MonoBehaviour
         SceneManager.LoadScene(loadingSceneName);
     }
 
+    public IEnumerator PostAuthorizedJson<TPayload>(string endpoint, TPayload payload, Action<bool, string> done)
+    {
+        string token = AccessToken;
+        if (string.IsNullOrWhiteSpace(token))
+            token = PlayerPrefs.GetString(AccessKey, "");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            done?.Invoke(false, "Missing access token");
+            yield break;
+        }
+
+        string normalizedEndpoint = endpoint.StartsWith("/") ? endpoint : "/" + endpoint;
+        string json = JsonUtility.ToJson(payload);
+
+        using var req = new UnityWebRequest($"{BaseUrl}{normalizedEndpoint}", UnityWebRequest.kHttpVerbPOST);
+        req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Accept", "application/json");
+        req.SetRequestHeader("Authorization", $"Bearer {token}");
+
+        yield return req.SendWebRequest();
+
+        bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode >= 200 && req.responseCode < 300;
+        string body = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+        done?.Invoke(ok, string.IsNullOrWhiteSpace(body) ? $"HTTP {req.responseCode}" : body);
+    }
+
     private int GetUserIdFromToken(string token)
     {
         if (string.IsNullOrEmpty(token))
@@ -348,7 +377,6 @@ public class AuthClient : MonoBehaviour
 
     public void Logout()
     {
-        _instance = null;  // Clear the singleton reference before logout
         ClearTokens();
         ClearProfileSelection();
 
@@ -357,7 +385,13 @@ public class AuthClient : MonoBehaviour
             NetworkHandler.Instance.DisposeForLogout();
         }
 
+        if (_instance == this)
+        {
+            _instance = null;
+        }
+
         SceneManager.LoadScene(loginScene);
+        Destroy(gameObject);
     }
 
     // ──────────────────────────────────────────────

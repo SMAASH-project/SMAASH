@@ -280,10 +280,7 @@ AnimatorStateTransition:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 2
-    m_ConditionEvent: isAttacking
-    m_EventTreshold: 0
+  m_Conditions: []
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: -304562275976939357}
   m_Solo: 0
@@ -394,9 +391,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.005351901
+  m_TransitionDuration: 0.03316441
   m_TransitionOffset: 0
-  m_ExitTime: 0.9725669
+  m_ExitTime: 0.93333316
   m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
