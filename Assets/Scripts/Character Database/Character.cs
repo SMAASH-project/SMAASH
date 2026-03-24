@@ -8,6 +8,7 @@ using UnityEngine;
 [System.Serializable]
 public class Character
 {
+    public int character_id;
     public Sprite characterSprite;
     public string character_name;
     public NetworkPrefabRef playerPrefab;

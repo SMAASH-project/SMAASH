@@ -4,11 +4,32 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+
+[Serializable]
+public class MatchParticipationDto
+{
+    public int player_id;
+    public int character_id;
+    public string result;
+    public string network_status;
+}
+
+[Serializable]
+public class MatchResultDto
+{
+    public string session_id;
+    public string started_at;
+    public string ended_at;
+    public int level_id;
+    public MatchParticipationDto participation;
+}
 
 public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 {
@@ -19,6 +40,10 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string _waitingRoomSceneName = "sc_waiting_room";
     [SerializeField] private string _lobbySceneName = "sc_lobby";
     [SerializeField] private string _loginSceneName = "sc_register";
+    [Header("Match Result API")]
+    [SerializeField] private AuthClient authClient;
+    [SerializeField] private string matchResultEndpoint = "/api/matches";
+    [SerializeField] private int levelId = 1;
 
     [Header("Spawn Points")]
     [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
@@ -42,6 +67,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     private bool _sceneLoadRequested = false;
     private bool _isCancellingMatchmaking = false;
     private bool _isDisposing = false;
+    private bool _isEndingMatch = false;
+    private string _matchStartedAt = string.Empty;
 
     private void Awake()
     {
@@ -259,6 +286,9 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
                 PlayerCount = mode == GameMode.Single ? 1 : 2,
                 SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
             });
+
+            _matchStartedAt = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            _isEndingMatch = false;
         }
         catch (Exception ex)
         {
@@ -270,6 +300,114 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     public void DisposeForLogout()
     {
         _ = ShutdownAndDestroyAsync();
+    }
+
+    public void HandleMatchEnded(int deadPlayerId)
+    {
+        if (_isEndingMatch || _isDisposing)
+            return;
+
+        _isEndingMatch = true;
+        StartCoroutine(PostMatchResultAndReturnToLobby(deadPlayerId));
+    }
+
+    private IEnumerator PostMatchResultAndReturnToLobby(int deadPlayerId)
+    {
+        if (authClient == null)
+            authClient = FindObjectOfType<AuthClient>();
+
+        string startedAt = string.IsNullOrWhiteSpace(_matchStartedAt)
+            ? DateTime.UtcNow.ToString("yyyy-MM-dd")
+            : _matchStartedAt;
+        string endedAt = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+        int localPhotonPlayerId = _runner != null ? _runner.LocalPlayer.PlayerId : -1;
+        string localResult = localPhotonPlayerId == deadPlayerId ? "lose" : "win";
+        string networkStatus = _lastGameMode == GameMode.Single ? "offline" : "online";
+
+        var payload = new MatchResultDto
+        {
+            session_id = ResolveSessionId(),
+            started_at = startedAt,
+            ended_at = endedAt,
+            level_id = levelId,
+            participation = new MatchParticipationDto
+            {
+                player_id = PlayerPrefs.GetInt("selected_profile_id", -1),
+                character_id = ResolveLocalCharacterId(),
+                result = localResult,
+                network_status = networkStatus
+            }
+        };
+
+        Debug.Log($"[NetworkHandler] Match ended. Payload: {JsonUtility.ToJson(payload)}");
+
+        if (authClient != null)
+        {
+            bool done = false;
+            bool success = false;
+            string response = string.Empty;
+
+            yield return StartCoroutine(authClient.PostAuthorizedJson(matchResultEndpoint, payload, (ok, body) =>
+            {
+                success = ok;
+                response = body;
+                done = true;
+            }));
+
+            if (!done || !success)
+                Debug.LogWarning($"[NetworkHandler] Match result post failed: {response}");
+            else
+                Debug.Log($"[NetworkHandler] Match result posted: {response}");
+        }
+        else
+        {
+            Debug.LogWarning("[NetworkHandler] AuthClient not found. Skipping match result post.");
+        }
+
+        CancelMatchmaking();
+    }
+
+    private string ResolveSessionId()
+    {
+        string photonSessionName = string.Empty;
+
+        if (_runner != null && _runner.SessionInfo.IsValid)
+            photonSessionName = _runner.SessionInfo.Name;
+
+        if (string.IsNullOrWhiteSpace(photonSessionName))
+            photonSessionName = _lastRoomName;
+
+        return ToDeterministicGuid(photonSessionName);
+    }
+
+    private static string ToDeterministicGuid(string value)
+    {
+        if (Guid.TryParse(value, out var parsed))
+            return parsed.ToString();
+
+        string normalized = string.IsNullOrWhiteSpace(value) ? "smaash-session" : value.Trim();
+
+        using var md5 = MD5.Create();
+        byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(normalized));
+        return new Guid(hash).ToString();
+    }
+
+    private int ResolveLocalCharacterId()
+    {
+        int selectedIndex = PlayerPrefs.GetInt("selectedOption", 0);
+
+        if (characterDatabase != null &&
+            characterDatabase.character != null &&
+            selectedIndex >= 0 &&
+            selectedIndex < characterDatabase.character.Length)
+        {
+            var selectedCharacter = characterDatabase.GetCharacter(selectedIndex);
+            if (selectedCharacter != null && selectedCharacter.character_id > 0)
+                return selectedCharacter.character_id;
+        }
+
+        return selectedIndex + 1;
     }
 
     private async Task ShutdownAndDestroyAsync()
@@ -459,6 +597,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         Debug.Log($"[NetworkHandler] Shutdown - Reason: {shutdownReason}");
         _isConnecting = false;
         _sceneLoadRequested = false;
+        _isEndingMatch = false;
         if (_runner == runner) _runner = null;
     }
     
