@@ -1,34 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
+[DisallowMultipleComponent]
 public class LocalInputHandler : MonoBehaviour
 {
-    [SerializeField] private Button jumpButton;
     private FloatingJoystick joystick;
-    private bool jumpButtonPressed = false;
     
     void Start()
     {
-        if (jumpButton != null)
-            jumpButton.onClick.AddListener(OnJumpButtonPressed);
-
-        if (jumpButton == null)
-        {
-            var go = GameObject.Find("Jump");
-            if (go != null)
-            {
-                jumpButton = go.GetComponent<Button>();
-                jumpButton?.onClick.AddListener(OnJumpButtonPressed);
-            }
-        }
-
         joystick = FindObjectOfType<FloatingJoystick>();
-    }
-
-    public void OnJumpButtonPressed()
-    {
-        jumpButtonPressed = true;
     }
     
     public NetworkInputData GetNetworkInput()
@@ -60,10 +40,9 @@ public class LocalInputHandler : MonoBehaviour
         // KOMBINÁLT INPUT (bármelyik működik)
         data.moveInput = keyboardInput.magnitude > 0.1f ? keyboardInput : joystickInput;
         
-        // UGRÁS - Billentyűzet vagy UI gomb
+        // UGRÁS - csak billentyűzet (UI Jump gombot a PlayerMovement kezeli)
         bool keyboardJump = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
-        data.jumpPressed = keyboardJump || jumpButtonPressed;
-        jumpButtonPressed = false; // reset
+        data.jumpPressed = keyboardJump;
         
         return data;
     }
