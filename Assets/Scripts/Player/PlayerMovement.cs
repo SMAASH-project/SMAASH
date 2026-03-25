@@ -1,6 +1,8 @@
 using UnityEngine;
 using Fusion;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class PlayerMovement : NetworkBehaviour
 {
@@ -10,13 +12,21 @@ public class PlayerMovement : NetworkBehaviour
     public SpriteRenderer spriteRenderer;
     public Transform groundCheck;
     public LayerMask groundLayer;
+    public Button jumpButton;
 
     [Header("Settings")]
     public float speed = 8f;
     public float jumpingPower = 20f;
     public bool isCountingDown;
+    [Min(0)] public int maxAirJumps = 1;
+    [SerializeField] private bool logJumpDebug = true;
 
-    private int extraJumps = 1;
+    private int extraJumps;
+    private bool jumpRequestedFromButton;
+    private bool isJumpButtonHeld;
+    private bool isJumpButtonOwner;
+    private JumpButtonPressRelay jumpButtonRelay;
+    private static PlayerMovement jumpButtonOwner;
     
     // Network synced animation states
     [Networked] public bool IsFacingLeft { get; set; }
@@ -26,6 +36,68 @@ public class PlayerMovement : NetworkBehaviour
     public override void Spawned()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        if (Object.HasInputAuthority && (jumpButtonOwner == null || jumpButtonOwner == this))
+        {
+            jumpButtonOwner = this;
+            isJumpButtonOwner = true;
+        }
+
+        extraJumps = maxAirJumps;
+
+        if (logJumpDebug)
+        {
+            Debug.Log($"[JumpSetup] Spawned ownerCandidate={isJumpButtonOwner} thisId={GetInstanceID()} go={gameObject.name} hasInputAuth={Object.HasInputAuthority}");
+        }
+
+        SetupJumpButton();
+    }
+
+    void SetupJumpButton()
+    {
+        if (!Object.HasInputAuthority || !isJumpButtonOwner)
+            return;
+
+        if (jumpButton == null)
+        {
+            GameObject jumpObject = GameObject.Find("Jump");
+            if (jumpObject != null)
+                jumpButton = jumpObject.GetComponent<Button>();
+        }
+
+        if (jumpButton != null)
+        {
+            jumpButton.onClick.RemoveListener(OnJumpButtonPressed);
+
+            jumpButtonRelay = jumpButton.GetComponent<JumpButtonPressRelay>();
+            if (jumpButtonRelay == null)
+                jumpButtonRelay = jumpButton.gameObject.AddComponent<JumpButtonPressRelay>();
+
+            jumpButtonRelay.Pressed -= OnJumpButtonPressed;
+            jumpButtonRelay.Pressed += OnJumpButtonPressed;
+            jumpButtonRelay.Released -= OnJumpButtonReleased;
+            jumpButtonRelay.Released += OnJumpButtonReleased;
+
+            if (logJumpDebug)
+            {
+                Debug.Log($"[JumpSetup] press relay bound thisId={GetInstanceID()} button={jumpButton.name}");
+            }
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (jumpButtonOwner == this)
+            jumpButtonOwner = null;
+
+        if (jumpButtonRelay != null)
+        {
+            jumpButtonRelay.Pressed -= OnJumpButtonPressed;
+            jumpButtonRelay.Released -= OnJumpButtonReleased;
+        }
+
+        if (jumpButton != null)
+            jumpButton.onClick.RemoveListener(OnJumpButtonPressed);
     }
 
     public override void FixedUpdateNetwork()
@@ -45,14 +117,42 @@ public class PlayerMovement : NetworkBehaviour
         if (GetInput(out NetworkInputData data))
         {
             rb.velocity = new Vector2(data.moveInput.x * speed, rb.velocity.y);
-
-            if (data.jumpPressed)
-            {
-                Debug.Log("Jump pressed detected in FixedUpdateNetwork");
-                Jump();
-            }
         }
+
+        if (jumpRequestedFromButton)
+        {
+            jumpRequestedFromButton = false;
+            Debug.Log("Jump requested from UI button");
+            Jump();
+        }
+
         UpdateNetworkedAnimationValues();
+    }
+
+    void OnJumpButtonPressed()
+    {
+        if (!Object.HasInputAuthority || !isJumpButtonOwner)
+            return;
+
+        if (isJumpButtonHeld)
+            return;
+
+        isJumpButtonHeld = true;
+
+        if (jumpRequestedFromButton)
+            return;
+
+        if (logJumpDebug)
+        {
+            Debug.Log($"[JumpClick] thisId={GetInstanceID()} go={gameObject.name} frame={Time.frameCount} hasInputAuth={Object.HasInputAuthority} isOwner={isJumpButtonOwner}");
+        }
+
+        jumpRequestedFromButton = true;
+    }
+
+    void OnJumpButtonReleased()
+    {
+        isJumpButtonHeld = false;
     }
 
     void Jump()
@@ -60,11 +160,14 @@ public class PlayerMovement : NetworkBehaviour
         if (IsGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
-            extraJumps = 1;
-        }else if (extraJumps > 0)
+            extraJumps = maxAirJumps;
+            return;
+        }
+
+        if (extraJumps > 0)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
-            extraJumps = 0;
+            extraJumps--;
         }
     }
 
@@ -97,4 +200,20 @@ public class PlayerMovement : NetworkBehaviour
     }
 
     bool IsGrounded() => Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+
+    private class JumpButtonPressRelay : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+    {
+        public event System.Action Pressed;
+        public event System.Action Released;
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            Pressed?.Invoke();
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            Released?.Invoke();
+        }
+    }
 }

@@ -9,9 +9,6 @@ public class ButtonCooldowns : MonoBehaviour
     public Animator attack_anim;
     public Button attack_btn;
 
-    public Animator jump_anim;
-    public Button jump_btn;
-
     public bool isDead = false;
 
 
@@ -19,24 +16,23 @@ public class ButtonCooldowns : MonoBehaviour
     void Start()
     {
         attack_btn.interactable = true;
-        jump_btn.interactable = true;
     }
 
     void Awake()
     {
+        attack_btn.onClick.RemoveListener(Attack_Button_pressed);
         attack_btn.onClick.AddListener(Attack_Button_pressed);
-        jump_btn.onClick.AddListener(Jump_Button_pressed);
+    }
+
+    void OnDestroy()
+    {
+        if (attack_btn != null)
+            attack_btn.onClick.RemoveListener(Attack_Button_pressed);
     }
 
     void Attack_Button_pressed(){
         if(isDead == false){
             StartCoroutine(AttackCooldownStart());
-        }
-    }
-
-    void Jump_Button_pressed(){
-        if(isDead == false){
-            StartCoroutine(JumpCooldownStart());
         }
     }
 
@@ -47,12 +43,5 @@ public class ButtonCooldowns : MonoBehaviour
        
        attack_btn.interactable = true;
     }
-
-    IEnumerator JumpCooldownStart(){
-       jump_anim.SetTrigger("isJumping");
-       jump_btn.interactable = false;
-       yield return new WaitForSecondsRealtime(.5f);
-       jump_btn.interactable = true;
-     }
 
 }

@@ -240,9 +240,15 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  jumpButton: {fileID: 0}
   speed: 8
   jumpingPower: 10
   isCountingDown: 0
+  maxAirJumps: 1
+  logJumpDebug: 1
+  _IsFacingLeft: 0
+  _NetworkSpeed: 0
+  _NetworkIsJumping: 0
 --- !u!114 &4356006495732988501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -264,6 +270,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 136
   damage: 20
+  _IsAttacking: 0
 --- !u!212 &5567647222599282870
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -580,6 +587,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   yOffset: 3.8
   zOffset: -2
+  CamIsActive: 0
+  blackScreenCanvasGroup: {fileID: 0}
+  loadingText: {fileID: 0}
 --- !u!114 &6251985581201595366
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -616,7 +626,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 340c386edf99f4e518557c34fa78bcce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpButton: {fileID: 0}
 --- !u!114 &8513818846430190310
 MonoBehaviour:
   m_ObjectHideFlags: 0
