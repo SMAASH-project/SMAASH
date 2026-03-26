@@ -465,15 +465,28 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     {
         var data = new NetworkInputData();
 
-        // Use TryGetPlayerObject to find specific character
+        LocalInputHandler handler = null;
+
         if (runner.TryGetPlayerObject(runner.LocalPlayer, out var playerObj))
+            handler = playerObj.GetComponent<LocalInputHandler>();
+
+        if (handler == null)
         {
-            var handler = playerObj.GetComponent<LocalInputHandler>(); 
-            if (handler != null)
+            var allHandlers = FindObjectsOfType<LocalInputHandler>();
+            for (int i = 0; i < allHandlers.Length; i++)
             {
-                data = handler.GetNetworkInput();
+                var networkObject = allHandlers[i].GetComponent<NetworkObject>();
+                if (networkObject != null && networkObject.HasInputAuthority)
+                {
+                    handler = allHandlers[i];
+                    break;
+                }
             }
         }
+
+        if (handler != null)
+            data = handler.GetNetworkInput();
+
         input.Set(data);
     }
 

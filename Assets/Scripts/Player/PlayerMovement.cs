@@ -19,7 +19,6 @@ public class PlayerMovement : NetworkBehaviour
     public float jumpingPower = 20f;
     public bool isCountingDown;
     [Min(0)] public int maxAirJumps = 1;
-    [SerializeField] private bool logJumpDebug = true;
 
 
     [Networked] private int extraJumps { get; set; }
@@ -27,6 +26,7 @@ public class PlayerMovement : NetworkBehaviour
     public override void Spawned()
     {
         rb = GetComponent<Rigidbody2D>();
+        localInputHandler = GetComponent<LocalInputHandler>();
 
         if (Object.HasInputAuthority && (jumpButtonOwner == null || jumpButtonOwner == this))
         {
@@ -35,11 +35,6 @@ public class PlayerMovement : NetworkBehaviour
         }
 
         extraJumps = maxAirJumps;
-
-        if (logJumpDebug)
-        {
-            Debug.Log($"[JumpSetup] Spawned ownerCandidate={isJumpButtonOwner} thisId={GetInstanceID()} go={gameObject.name} hasInputAuth={Object.HasInputAuthority}");
-        }
 
         SetupJumpButton();
     }
@@ -68,11 +63,6 @@ public class PlayerMovement : NetworkBehaviour
             jumpButtonRelay.Pressed += OnJumpButtonPressed;
             jumpButtonRelay.Released -= OnJumpButtonReleased;
             jumpButtonRelay.Released += OnJumpButtonReleased;
-
-            if (logJumpDebug)
-            {
-                Debug.Log($"[JumpSetup] press relay bound thisId={GetInstanceID()} button={jumpButton.name}");
-            }
         }
     }
 
@@ -93,8 +83,6 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
-        Debug.Log("isCountingDown: " + isCountingDown);
-
         if(isCountingDown) return;
 
         PlayerHealth playerHealth = GetComponent<PlayerHealth>();
@@ -105,16 +93,15 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
+        if (!Object.HasStateAuthority)
+            return;
+
         if (GetInput(out NetworkInputData data))
         {
             rb.velocity = new Vector2(data.moveInput.x * speed, rb.velocity.y);
-        }
 
-        if (jumpRequestedFromButton)
-        {
-            jumpRequestedFromButton = false;
-            Debug.Log("Jump requested from UI button");
-            Jump();
+            if (data.jumpPressed)
+                Jump();
         }
 
         UpdateNetworkedAnimationValues();
@@ -130,15 +117,8 @@ public class PlayerMovement : NetworkBehaviour
 
         isJumpButtonHeld = true;
 
-        if (jumpRequestedFromButton)
-            return;
-
-        if (logJumpDebug)
-        {
-            Debug.Log($"[JumpClick] thisId={GetInstanceID()} go={gameObject.name} frame={Time.frameCount} hasInputAuth={Object.HasInputAuthority} isOwner={isJumpButtonOwner}");
-        }
-
-        jumpRequestedFromButton = true;
+        if (localInputHandler != null)
+            localInputHandler.QueueJumpFromUI();
     }
 
     void OnJumpButtonReleased()
