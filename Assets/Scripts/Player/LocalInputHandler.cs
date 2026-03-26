@@ -5,12 +5,18 @@ using UnityEngine.InputSystem;
 public class LocalInputHandler : MonoBehaviour
 {
     private FloatingJoystick joystick;
+    private bool queuedJumpFromButton;
     
     void Start()
     {
         joystick = FindObjectOfType<FloatingJoystick>();
     }
-    
+
+    public void QueueJumpFromUI()
+    {
+        queuedJumpFromButton = true;
+    }
+
     public NetworkInputData GetNetworkInput()
     {
         NetworkInputData data = new NetworkInputData();
@@ -40,9 +46,10 @@ public class LocalInputHandler : MonoBehaviour
         // KOMBINÁLT INPUT (bármelyik működik)
         data.moveInput = keyboardInput.magnitude > 0.1f ? keyboardInput : joystickInput;
         
-        // UGRÁS - csak billentyűzet (UI Jump gombot a PlayerMovement kezeli)
+        // UGRÁS - billentyűzet + UI gomb
         bool keyboardJump = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
-        data.jumpPressed = keyboardJump;
+        data.jumpPressed = keyboardJump || queuedJumpFromButton;
+        queuedJumpFromButton = false;
         
         return data;
     }

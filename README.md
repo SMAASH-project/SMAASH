@@ -2,52 +2,27 @@
 
 # SMAASH – Algoritmus dokumentáció
 
-## Tartalomjegyzék
-
-1. [A Fusion hálózati keretrendszer alapfogalmai](#1-a-fusion-hálózati-keretrendszer-alapfogalmai)
-2. [Játékos mozgás és input kezelés](#2-játékos-mozgás-és-input-kezelés)
-3. [Harci rendszer](#3-harci-rendszer)
-4. [Életerő és halál rendszer](#4-életerő-és-halál-rendszer)
-5. [Hálózati kommunikáció és meccs kezelés](#5-hálózati-kommunikáció-és-meccs-kezelés)
-6. [Kommunikáció a külső backenddel](#6-kommunikáció-a-külső-backenddel)
-7. [Karakterválasztás](#7-karakterválasztás)
-8. [Kamera és vizuális rendszer](#8-kamera-és-vizuális-rendszer)
-
----
-
 ## 1. A Fusion hálózati keretrendszer alapfogalmai
 
 A SMAASH Unity kliense a **Photon Fusion 2** hálózati SDK-t használja a valós idejű multiplayer megvalósításához. Az alábbiakban azok az alapfogalmak szerepelnek, amelyek a kód megértéséhez szükségesek.
 
-### `NetworkBehaviour` vs `MonoBehaviour`
+### `NetworkBehaviour`
 
-A hagyományos Unity `MonoBehaviour` helyett a hálózatos objektumok `NetworkBehaviour`-ből öröklődnek. Ez hozzáférést ad a Fusion-specifikus életciklus-metódusokhoz és a hálózati tulajdonságokhoz.
+A `NetworkBehaviour` hozzáférést ad a Fusion-specifikus életciklus-metódusokhoz és a hálózati tulajdonságokhoz.
 
 ```csharp
-// Hagyományos Unity:
-public class PlayerMovement : MonoBehaviour { ... }
-
-// Fusion hálózatos verzió:
 public class PlayerMovement : NetworkBehaviour { ... }
 ```
 
 ### `[Networked]` – hálózaton szinkronizált tulajdonságok
 
-A `[Networked]` attribútummal jelölt property-k értékét a Fusion automatikusan replikálja minden csatlakozott kliensnek. Az értéket csak az **állami hatóság** (StateAuthority – általában a szerver/host) írhatja, a kliensek csak olvashatják.
+A `[Networked]` attribútummal jelölt property-k értékét a Fusion automatikusan replikálja minden csatlakozott kliensnek. Az értéket csak az **StateAuthority** (a szerver/host) írhatja, a kliensek csak olvashatják.
 
 ```csharp
 // PlayerMovement.cs
 [Networked] public bool IsFacingLeft { get; set; }
 [Networked] public float NetworkSpeed { get; set; }
 [Networked] public bool NetworkIsJumping { get; set; }
-```
-
-Ha egy `[Networked]` property változik, az összes kliens automatikusan megkapja a frissített értéket – manuális szinkronizáció nem szükséges. Az `OnChangedRender` paraméterrel egy callback is megadható a változásra:
-
-```csharp
-// PlayerHealth.cs – ha CurrentHealth változik a hálózaton, OnHealthChanged fut minden kliensen
-[Networked, OnChangedRender(nameof(OnHealthChanged))]
-private int CurrentHealth { get; set; }
 ```
 
 ### `HasInputAuthority` és `HasStateAuthority`
@@ -92,7 +67,7 @@ public override void Spawned()
 
 ### `FixedUpdateNetwork()` – determinisztikus hálózati tick
 
-A Fusion nem a Unity `Update()`-jét, hanem a `FixedUpdateNetwork()`-öt használja a játéklogika futtatásához. Ez minden hálózati tick-ben fut (alapértelmezetten 30/s vagy 60/s), és **determinisztikus** – azaz minden kliensen pontosan ugyanabban a sorrendben hajtódik végre, ami megelőzi a szinkronizációs problémákat.
+A Fusion nem a Unity `Update()`-jét, hanem a `FixedUpdateNetwork()`-öt használja a játéklogika futtatásához. Ez minden hálózati tick-ben fut (alapértelmezetten 30/s vagy 60/mp), és **determinisztikus** – azaz minden kliensen pontosan ugyanabban a sorrendben hajtódik végre, ami megelőzi a szinkronizációs problémákat.
 
 ```csharp
 // PlayerMovement.cs
@@ -116,11 +91,11 @@ public override void FixedUpdateNetwork()
 }
 ```
 
-A `GetInput()` metódus csak azon a kliensen ad vissza adatot, amelyiknek inputhatósága van – a többi kliensen üres struktúrát ad vissza.
+A `GetInput()` metódus csak egy azon a kliensen ad vissza adatot, ahol input történt – a többi kliensen üres struktúrát ad vissza.
 
 ### `Render()` – vizuális frissítés
 
-A `Render()` minden képkockában fut (ellentétben a `FixedUpdateNetwork()`-kel), és kizárólag vizuális frissítésre való. Mivel a `[Networked]` értékek már szinkronban vannak, itt biztonságosan olvashatók animátor értékek beállításához.
+A `Render()` minden képkockában fut (ellentétben a `FixedUpdateNetwork()`-kel), és kizárólag vizuális frissítésre való. Mivel a `[Networked]` értékek már szinkronban vannak, itt biztonságosan olvashatók az animáció értékeinek a beállításához.
 
 ```csharp
 // PlayerMovement.cs
@@ -214,8 +189,8 @@ public NetworkInputData GetNetworkInput()
     // Billentyűzet prioritása van a joystick felett
     data.moveInput = keyboardInput.magnitude > 0.1f ? keyboardInput : joystickInput;
 
-    // Ugrás csak billentyűzetről (UI gomb kezelése a PlayerMovement-ben van)
-    data.jumpPressed = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+    bool keyboardJump = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+    data.jumpPressed = keyboardJump || jumpButtonPressed;
 
     return data;
 }
@@ -268,7 +243,7 @@ public override void FixedUpdateNetwork()
 }
 ```
 
-Az ugrás logika megkülönbözteti a talajról és a levegőből történő ugrást (double jump):
+Az ugrás logika megkülönbözteti a talajról és a levegőből történő ugrást (kettős ugrás implementációhoz):
 
 ```csharp
 void Jump()
@@ -337,7 +312,7 @@ private void RPC_PerformAttack(bool isFacingLeft)
 {
     Transform activePoint = isFacingLeft ? attackPointOpposite : attackPoint;
 
-    // Physics2D.OverlapCircle: körzetben keres ütközőt az enemyLayer-en
+    //Egy kört rajzol ki, ahol keresi az enemyLayerrel rendelkező objektumokat és vissza adja azt a változóba
     Collider2D hitEnemy = Physics2D.OverlapCircle(activePoint.position, attackRange, enemyLayer);
 
     if (hitEnemy != null)
@@ -364,6 +339,7 @@ A lövedék hálózati spawnjához a kliens RPC-t küld a szervernek, amely lét
 private void OnAttackInput(InputAction.CallbackContext context)
 {
     if (!canAttack) return;
+    // A két kiindulási pont (jobbra vagy balra néz a karakter) közül kiválasztjuk azt, amelyik a megfelelő
     Transform activePoint = spriteRenderer.flipX ? attackPointOpposite : attackPoint;
     SpawnBulletRpc(activePoint.position, activePoint.rotation, spriteRenderer.flipX);
     StartCoroutine(AttackCooldown());
@@ -398,6 +374,15 @@ public override void FixedUpdateNetwork()
         rb.velocity = direction * speed;
 }
 
+public void SetDirection(Vector2 newDirection)
+{        
+    direction = newDirection.normalized;
+        
+    // Elforgatja a lövedéket a jó irányba
+    float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+    transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+}
+
 void OnTriggerEnter2D(Collider2D collision)
 {
     if (collision.TryGetComponent<PlayerHealth>(out var health))
@@ -428,14 +413,14 @@ private int CurrentHealth { get; set; }
 [Networked] public bool isDead { get; set; }
 ```
 
-A `Spawned()`-ban a játékos PlayerId-je alapján dől el, melyik UI sávot kezelje ez az objektum:
+A `Spawned()`-ban a játékos PlayerId-je alapján dől el, melyik sarokba rakja a játékos életerejét:
 
 ```csharp
 public override void Spawned()
 {
     if (UIManager.Instance != null)
     {
-        // PlayerId páratlan → 1. sáv (host), páros → 2. sáv (kliens)
+        // PlayerId páratlan → bal felső sarok, páros → jobb felső sarok
         if (Object.InputAuthority.PlayerId % 2 != 0)
             myUIBar = UIManager.Instance.healthBar1;
         else
@@ -454,7 +439,7 @@ public override void Spawned()
 A sebzés kétlépéses RPC-n keresztül megy:
 
 ```csharp
-// 1. lépés: a sérülést elszenvedő karakter bármely kliensről kérhet sebzést
+// 1. lépés: a sérülést elszenvedő karakter bármely kliensről kérhet sebzést (ezt hívjuk meg a támadás scriptekből), paraméterként bekérjük a támadás által okozozz sebzés mértékét
 public void TakeDamageCaller(int damage)
 {
     if (isDead) return;
@@ -475,7 +460,7 @@ private void RPC_RequestDamage(int damage)
     }
 }
 
-// 3. lépés: halál esemény szétküldése minden kliensnek
+// 3. lépés: halál esemény szétküldése minden kliensnek, leáll a mozgás mindkét játékosnál és a NetworkHandle scriptből meghivja a HandleMatchEnded függvényt, ami a halott játékos Id-ját kéri be paraméterként
 [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
 private void RPC_BroadcastDeath(int deadPlayerId)
 {
@@ -499,12 +484,48 @@ private void RPC_BroadcastDeath(int deadPlayerId)
 A játék indításakor a `NetworkHandler` létrehoz egy `NetworkRunner` objektumot, és meghívja a Fusion `StartGame()` metódusát:
 
 ```csharp
+// Szoba létrehozása vagy szobához csatlakozás után fut le
+public void RoomCreateAndJoin()
+{
+    if (_pendingCharacterSelectMode == GameMode.Single)
+    {
+        StartGame(GameMode.Single, "LocalTestRoom");
+        return;
+    }
+        
+    SceneManager.LoadScene(_waitingRoomSceneName);
+        
+    // Use a coroutine to create/join room after scene loads
+    StartCoroutine(CreateOrJoinRoomAfterSceneLoad());
+}
+
+private IEnumerator CreateOrJoinRoomAfterSceneLoad()
+{
+    // Wait for the scene to load
+    yield return null;
+    yield return null;
+        
+     string roomName = string.IsNullOrWhiteSpace(_pendingRoomName) ? "DefaultRoom" : _pendingRoomName;
+
+    if (_pendingCharacterSelectMode == GameMode.Host)
+    {
+        Debug.Log("[NetworkHandler] Creating room: " + roomName);
+        StartGame(GameMode.Host, roomName);        
+    }
+    else
+    {
+        Debug.Log("[NetworkHandler] Joining room: " + roomName);
+        StartGame(GameMode.Client, roomName);
+    }
+}
+
+
 async void StartGame(GameMode mode, string roomName)
 {
     if (_isConnecting || _isCancellingMatchmaking || _isDisposing) return;
     _isConnecting = true;
 
-    // NetworkRunner: a Fusion kapcsolat motorja – egy DontDestroyOnLoad objektumon él
+    // NetworkRunner: a Fusion kapcsolat motorja, alapértelmezetten szerepel a Fusion-ben – egy DontDestroyOnLoad objektumon él, tehát a jelenetek váltása alatt továbbra is fut ez a script
     GameObject runnerObj = new GameObject("NetworkRunner");
     DontDestroyOnLoad(runnerObj);
 
@@ -515,7 +536,7 @@ async void StartGame(GameMode mode, string roomName)
 
     await _runner.StartGame(new StartGameArgs
     {
-        GameMode = mode,           // Host, Client vagy Single
+        GameMode = mode,           // Host, Client vagy Single (tesztelésre)
         SessionName = _lastRoomName,
         PlayerCount = mode == GameMode.Single ? 1 : 2,
         SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
@@ -618,6 +639,7 @@ private IEnumerator PostMatchResultAndReturnToLobby(int deadPlayerId)
     };
 
     // AuthClient.PostAuthorizedJson elvégzi a tényleges HTTP POST kérést
+    // matchResultEndpoint: a végpont ahova a POST megy
     yield return StartCoroutine(authClient.PostAuthorizedJson(
         matchResultEndpoint, payload, (ok, body) =>
     {
@@ -642,55 +664,6 @@ private static string ToDeterministicGuid(string value)
     using var md5 = MD5.Create();
     byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(normalized));
     return new Guid(hash).ToString();
-}
-```
-
-### 5.3 `CountdownScript` – visszaszámláló
-
-A meccs kezdése előtt a `CountdownCoroutine` megvárja a játékosokat és kamerákat, majd befagyasztja, visszaszámlál, és feloldja a karaktereket:
-
-```csharp
-IEnumerator CountdownCoroutine()
-{
-    // 1. Várja, amíg mindkét játékos spawol
-    float waitTime = 0f;
-    GameObject[] players = new GameObject[0];
-    while (players.Length < expectedPlayerCount && waitTime < maxWaitTime)
-    {
-        players = GameObject.FindGameObjectsWithTag("Player");
-        if (players.Length < expectedPlayerCount)
-        {
-            yield return new WaitForSeconds(0.5f);
-            waitTime += 0.5f;
-        }
-    }
-
-    // 2. Várja, amíg minden kamera aktív (CameraController.SetYLevel lefutott)
-    bool allCamerasActive = false;
-    waitTime = 0f;
-    while (!allCamerasActive && waitTime < maxWaitTime)
-    {
-        allCamerasActive = true;
-        foreach (GameObject player in players)
-        {
-            CameraController cam = player.GetComponent<CameraController>();
-            if (cam == null || !cam.IsCamActive()) allCamerasActive = false;
-        }
-        if (!allCamerasActive) { yield return new WaitForSeconds(0.5f); waitTime += 0.5f; }
-    }
-
-    // 3. Befagyasztás és visszaszámlálás
-    foreach (GameObject player in players)
-        player.GetComponent<PlayerMovement>().isCountingDown = true;
-
-    countdown_text.text = "3"; yield return new WaitForSeconds(1);
-    countdown_text.text = "2"; yield return new WaitForSeconds(1);
-    countdown_text.text = "1"; yield return new WaitForSeconds(1);
-    countdown_text.text = "FIGHT!"; yield return new WaitForSeconds(1);
-    countdown_text.text = "";
-
-    foreach (GameObject player in players)
-        player.GetComponent<PlayerMovement>().isCountingDown = false;
 }
 ```
 
@@ -767,6 +740,37 @@ private IEnumerator TryAutoLogin()
         if (refreshed && SceneManager.GetActiveScene().name != profileSelectScene)
             SceneManager.LoadScene(profileSelectScene);
     }
+}
+
+private IEnumerator RefreshToken(Action<bool> done)
+{
+    string currentRefresh = PlayerPrefs.GetString(RefreshKey, "");
+        
+    if (string.IsNullOrEmpty(currentRefresh))
+    {
+        done?.Invoke(false);
+        yield break;
+    }
+
+    var json = JsonUtility.ToJson(new RefreshRequestDto { refreshToken = currentRefresh });
+
+    using var req = new UnityWebRequest($"{BaseUrl}/api/game-refresh", "POST");
+    req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+    req.downloadHandler = new DownloadHandlerBuffer();
+    req.SetRequestHeader("Content-Type", "application/json");
+
+    yield return req.SendWebRequest();
+
+    if (req.result != UnityWebRequest.Result.Success || req.responseCode != 200)
+    {
+        ClearTokens();
+        done?.Invoke(false);
+        yield break;
+    }
+
+    var resp = JsonUtility.FromJson<RefreshResponseDto>(req.downloadHandler.text);
+    SaveTokens(resp.accessToken, resp.refreshToken);
+    done?.Invoke(true);
 }
 ```
 
@@ -885,9 +889,9 @@ public IEnumerator PostAuthorizedJson<TPayload>(string endpoint, TPayload payloa
 }
 ```
 
-### 6.5 `JsonHelper` – JSON tömb deszializálás
+### 6.5 `JsonHelper`
 
-A Unity `JsonUtility` nem tudja kezelni a gyökér szintű JSON tömböket (`[{...},{...}]`). A `JsonHelper` wrapper objektumba csomagolja a tömböt, majd azt deszializálja:
+A Unity `JsonUtility` nem tudja kezelni a gyökér szintű JSON tömböket (`[{...},{...}]`). A `JsonHelper` wrapper objektumba csomagolja a tömböt, majd azt használja:
 
 ```csharp
 public static T[] FromJsonArray<T>(string json)
@@ -987,131 +991,3 @@ private void Save()
     PlayerPrefs.Save();
 }
 ```
-
----
-
-## 8. Kamera és vizuális rendszer
-
-### 8.1 `CameraController`
-
-A kamera csak az inputhatóságú (helyi) játékosnál aktív. A `Spawned()`-ban bekapcsol, majd a `SetYLevel()` coroutine várja, amíg a játékos a talajon landol, beállítja az Y szintet, és kifadolja a betöltési képernyőt:
-
-```csharp
-public override void Spawned()
-{
-    if (cam) cam.enabled = Object.HasInputAuthority;
-    StartCoroutine(SetYLevel());
-}
-
-private IEnumerator SetYLevel()
-{
-    yield return new WaitForSeconds(1f);
-    yLevel = transform.position.y;
-    yield return new WaitForSeconds(1f);
-    loadingText.text = "";
-    CamIsActive = true;
-
-    // Fekete képernyő fokozatos eltüntetése
-    if (blackScreenCanvasGroup != null)
-    {
-        float fadeDuration = 0.5f;
-        float elapsedTime = 0f;
-        while (elapsedTime < fadeDuration)
-        {
-            elapsedTime += Time.deltaTime;
-            blackScreenCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsedTime / fadeDuration);
-            yield return null;
-        }
-        blackScreenCanvasGroup.alpha = 0f;
-    }
-}
-```
-
-A `LateUpdate()`-ben fut a kamera pozíció frissítése, vízszintes X határellenőrzéssel:
-
-```csharp
-void LateUpdate()
-{
-    if (Object != null && Object.HasInputAuthority && CamIsActive)
-        UpdatePosition();
-}
-
-private void UpdatePosition()
-{
-    if (Math.Abs(transform.position.x) > Bounds)
-    {
-        cam.transform.position = last; // határon kívül: utolsó pozíció megtartása
-        return;
-    }
-    temp.x = transform.position.x;
-    temp.y = yLevel + yOffset;
-    temp.z = transform.position.z + zOffset;
-    cam.transform.position = temp;
-    last = temp;
-}
-```
-
-### 8.2 `parallax_effect`
-
-A Fusion hálózatos kontextusban a `FindCam()` metódus megkeresi a helyi játékos kameráját az összes hálózati objektum közül:
-
-```csharp
-private Camera FindCam()
-{
-    GameObject[] Players = GameObject.FindGameObjectsWithTag("Player");
-    foreach (GameObject p in Players)
-    {
-        NetworkObject netObj = p.GetComponent<NetworkObject>();
-        // HasInputAuthority: csak a helyi játékos objektumára igaz
-        if (netObj != null && netObj.HasInputAuthority)
-            return p.GetComponentInChildren<Camera>();
-    }
-    return null;
-}
-
-void Update()
-{
-    if (Camera == null) return;
-    Pos = Camera.transform.position;
-    Distance = Pos.x * Parallax_factor;
-    transform.position = new Vector3(Starting_pos + Distance, transform.position.y, transform.position.z);
-}
-```
-
-### 8.3 `HealthBar`
-
-UI slider alapú életerő sáv, amelynek színe a `Gradient` alapján változik az aktuális életerő arányától függően:
-
-```csharp
-public void SetHealth(int health)
-{
-    if (slider) slider.value = health;
-    UpdateColor();
-}
-
-private void UpdateColor()
-{
-    if (fill && gradient != null && slider != null)
-        // normalizedValue: 0.0 (üres) → 1.0 (teli), a gradient adja meg a színt
-        fill.color = gradient.Evaluate(slider.normalizedValue);
-}
-```
-
-### 8.4 `UIManager`
-
-Singleton, amely a játék jelenetben elérhető UI elemek (életerő sávok) központi referenciáját tárolja, hogy a `PlayerHealth` scriptek elérjék:
-
-```csharp
-public static UIManager Instance;
-
-private void Awake()
-{
-    if (Instance == null) Instance = this;
-    else Destroy(gameObject);
-}
-```
-
-| Mező | Típus | Leírás |
-|---|---|---|
-| `healthBar1` | `HealthBar` | 1. játékos életerő sávja |
-| `healthBar2` | `HealthBar` | 2. játékos életerő sávja |
