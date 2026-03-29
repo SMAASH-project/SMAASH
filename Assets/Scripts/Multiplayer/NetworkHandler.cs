@@ -39,7 +39,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string _characterSelectSceneName = "sc_champ_select";
     [SerializeField] private string _waitingRoomSceneName = "sc_waiting_room";
     [SerializeField] private string _lobbySceneName = "sc_lobby";
-    [SerializeField] private string _loginSceneName = "sc_register";
+    [SerializeField] private string _loginSceneName = "sc_login";
     [Header("Match Result API")]
     [SerializeField] private AuthClient authClient;
     [SerializeField] private string matchResultEndpoint = "/api/matches";
