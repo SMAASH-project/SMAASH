@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ProfileSelectUI : MonoBehaviour
@@ -13,10 +14,16 @@ public class ProfileSelectUI : MonoBehaviour
     [SerializeField, Range(1, 5)] private int maxProfiles = 5;
     [SerializeField] private Sprite fallbackAvatar;
 
+    [SerializeField] private Button addProfileButton;
+    [SerializeField] private string createProfileSceneName = "sc_create_profile";
+
     private void Start()
     {
         if (authClient == null)
             authClient = FindObjectOfType<AuthClient>();
+
+        if (statusText == null)
+            Debug.LogWarning("ProfileSelectUI: statusText is not assigned.");
 
         if (authClient == null)
         {
@@ -34,29 +41,40 @@ public class ProfileSelectUI : MonoBehaviour
 
         FindLogOutButton();
 
+        if (addProfileButton != null)
+        {
+            addProfileButton.onClick.RemoveAllListeners();
+            addProfileButton.onClick.AddListener(OnOpenCreateProfileFlow);
+        }
+
         LoadProfiles();
     }
 
     public void LoadProfiles()
     {
         ClearList();
-        SetStatus("Loading profiles...");
+        SetStatus("Checking profiles...");
+        SetAddProfileButtonVisible(true);
 
         StartCoroutine(authClient.GetMyProfiles((success, profiles) =>
         {
             if (!success)
             {
                 SetStatus("Failed to load profiles.");
-                return;
-            }
-
-            if (profiles == null || profiles.Length == 0)
-            {
-                SetStatus("No profiles found.");
+                SetAddProfileButtonVisible(true);
                 return;
             }
 
             int maxCount = Mathf.Clamp(maxProfiles, 1, 5);
+            int totalCount = profiles != null ? profiles.Length : 0;
+            SetAddProfileButtonVisible(totalCount < maxCount);
+
+            if (profiles == null || profiles.Length == 0)
+            {
+                SetStatus("No profiles found. Add a new profile.");
+                return;
+            }
+
             int createdCount = 0;
 
             foreach (var p in profiles)
@@ -175,6 +193,23 @@ public class ProfileSelectUI : MonoBehaviour
     {
         if (statusText != null) statusText.text = message;
         Debug.Log(message);
+    }
+
+    private void SetAddProfileButtonVisible(bool isVisible)
+    {
+        if (addProfileButton != null)
+            addProfileButton.gameObject.SetActive(isVisible);
+    }
+
+    public void OnOpenCreateProfileFlow()
+    {
+        if (string.IsNullOrWhiteSpace(createProfileSceneName))
+        {
+            SetStatus("Create profile scene name is empty.");
+            return;
+        }
+
+        SceneManager.LoadScene(createProfileSceneName);
     }
 
     private void FindLogOutButton()

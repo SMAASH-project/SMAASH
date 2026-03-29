@@ -23,6 +23,18 @@ using UnityEngine.UI;
     public string last_login;
 }
 
+[Serializable] public class UserCreateDto
+{
+    public string email;
+    public string password;
+}
+
+[Serializable] public class PlayerProfileCreateDto
+{
+    public int user_id;
+    public string display_name;
+}
+
 [Serializable] public class PlayerProfileListResponse { public PlayerProfileDto[] profiles; }
 
 public class AuthClient : MonoBehaviour
@@ -34,7 +46,7 @@ public class AuthClient : MonoBehaviour
 
     [SerializeField] private string profileSelectScene = "sc_profile_select";
     [SerializeField] private string loadingSceneName = "sc_loading";
-    [SerializeField] private string loginScene = "sc_register";
+    [SerializeField] private string loginScene = "sc_login";
     [SerializeField] private bool clearPrefsOnStartForTesting = false;
 
     private static AuthClient _instance;
@@ -44,6 +56,11 @@ public class AuthClient : MonoBehaviour
 
     public TMP_InputField emailInput;
     public TMP_InputField passwordInput;
+
+    //public TMP_InputField signUpEmailInput;
+    //public TMP_InputField signUpPasswordInput;
+
+    public TMP_Text statusText;
 
     private const string AccessKey = "access_token";
     private const string RefreshKey = "refresh_token";
@@ -55,13 +72,13 @@ public class AuthClient : MonoBehaviour
         if (_instance != null && _instance != this)
         {
             // If we're in the login scene, destroy the old DontDestroyOnLoad instance
-            // and keep this scene-local instance instead
+            // and keep this instance (with fresh UI refs from the scene)
             if (SceneManager.GetActiveScene().name == loginScene)
             {
                 Debug.LogWarning("AuthClient instance being re-created on login scene. Destroying old DontDestroyOnLoad instance.");
                 Destroy(_instance.gameObject);
                 _instance = this;
-                // Don't mark as DontDestroyOnLoad - let it be destroyed with the scene
+                DontDestroyOnLoad(gameObject);
                 RestoreAccessTokenFromPrefs();
                 StartCoroutine(TryAutoLogin());
                 return;
@@ -124,6 +141,26 @@ public class AuthClient : MonoBehaviour
 
     private IEnumerator Login(string email, string password, Action<bool, string> done)
     {
+        // Validation
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            done(false, "Email and/or password cannot be empty.");
+            yield break;
+        }
+
+        if (!email.Contains("@"))
+        {
+            done(false, "Please enter a valid email address.");
+            yield break;
+        }
+
+        if (password.Length < 8)
+        {
+            done(false, "Password must be at least 8 characters long.");
+            yield break;
+        }
+
+        
         var json = JsonUtility.ToJson(new GameLoginRequest { email = email, password = password });
 
         using var req = new UnityWebRequest($"{BaseUrl}/api/game-login", "POST");
@@ -142,6 +179,204 @@ public class AuthClient : MonoBehaviour
         var resp = JsonUtility.FromJson<GameLoginResponse>(req.downloadHandler.text);
         SaveTokens(resp.accessToken, resp.refreshToken);
         done(true, "");
+    }
+
+    /// ──────────────────────────────────────────────
+    /// SIGNUP
+    /// ──────────────────────────────────────────────
+
+    public void OnSignUpButtonClicked()
+    {
+        StartCoroutine(SignUp(emailInput.text, passwordInput.text, (success, msg) =>
+        {
+            if (success)
+            {
+                Debug.Log("Signup successful! Please log in.");
+                if (statusText != null)
+                {
+                    statusText.text = "Signup successful! Please log in.";
+                    statusText.color = Color.green;
+                }
+
+                if (SceneManager.GetActiveScene().name != loginScene)
+                    SceneManager.LoadScene(loginScene);
+            }
+            else
+            {
+                Debug.LogError($"Signup failed: {msg}");
+                if (statusText != null)
+                {
+                    statusText.text = $"Signup failed: {msg}";
+                    statusText.color = Color.red;
+                }
+            }
+        }));
+    } 
+
+    private IEnumerator SignUp(string email, string password, Action<bool, string> done)
+    {
+        // Validation
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            done(false, "Email and/or password cannot be empty.");
+            yield break;
+        }
+
+        if (!email.Contains("@"))
+        {
+            done(false, "Please enter a valid email address.");
+            yield break;
+        }
+
+        if (password.Length < 8)
+        {
+            done(false, "Password must be at least 8 characters long.");
+            yield break;
+        }
+
+        var json = JsonUtility.ToJson(new UserCreateDto { email = email, password = password });
+
+        using var req = new UnityWebRequest($"{BaseUrl}/api/auth/signup", "POST");
+        req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            done(false, req.downloadHandler.text);
+            yield break;
+        }
+
+        done(true, "Signup successful! Please log in.");
+    }
+
+    /// ──────────────────────────────────────────────
+    /// CREATE PROFILE
+    /// ──────────────────────────────────────────────
+    
+    public IEnumerator CreateProfile(string displayName, Action<bool, string, PlayerProfileDto> done)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            done(false, "Display name cannot be empty.", null);
+            yield break;
+        }
+
+        string token = AccessToken;
+        if (string.IsNullOrWhiteSpace(token))
+            token = PlayerPrefs.GetString(AccessKey, "");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            done(false, "Missing access token", null);
+            yield break;
+        }
+
+        int userId = GetUserIdFromToken(token);
+        if (userId < 0)
+        {
+            done(false, "Invalid token payload (missing user id)", null);
+            yield break;
+        }
+
+        var payload = new PlayerProfileCreateDto
+        {
+            user_id = userId,
+            display_name = displayName.Trim()
+        };
+
+        bool createSuccess = false;
+        string createMsg = string.Empty;
+
+        yield return PostAuthorizedJson("/api/profiles", payload, (success, msg) =>
+        {
+            createSuccess = success;
+            createMsg = msg;
+        });
+
+        if (!createSuccess)
+        {
+            Debug.LogError($"Profile creation failed: {createMsg}");
+            done(false, $"Profile creation failed: {createMsg}", null);
+            yield break;
+        }
+
+        PlayerProfileDto createdProfile = TryParseCreatedProfile(createMsg);
+
+        if (!HasValidProfileId(createdProfile))
+        {
+            string parseError = "Profile created, but backend response is not compatible with PlayerProfileDto (missing valid id/display_name).";
+            Debug.LogError($"{parseError} Raw response: {createMsg}");
+            done(false, parseError, null);
+            yield break;
+        }
+
+        Debug.Log("Profile created successfully!");
+        done(true, "Profile created successfully!", createdProfile);
+    }
+
+    public IEnumerator UploadProfilePicture(int profileId, byte[] imageBytes, string fileName, Action<bool, string> done)
+    {
+        if (profileId <= 0)
+        {
+            done?.Invoke(false, "Invalid profile id");
+            yield break;
+        }
+
+        if (imageBytes == null || imageBytes.Length == 0)
+        {
+            done?.Invoke(false, "No image data to upload");
+            yield break;
+        }
+
+        string token = AccessToken;
+        if (string.IsNullOrWhiteSpace(token))
+            token = PlayerPrefs.GetString(AccessKey, "");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            done?.Invoke(false, "Missing access token");
+            yield break;
+        }
+
+        var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "profile.png" : fileName;
+        var form = new WWWForm();
+        form.AddBinaryData("profilePicture", imageBytes, safeFileName, "image/png");
+
+
+        using var req = UnityWebRequest.Post($"{BaseUrl}/api/profiles/{profileId}/pfp", form);
+        req.SetRequestHeader("Authorization", $"Bearer {token}");
+        req.SetRequestHeader("Accept", "application/json, text/plain, */*");
+
+        yield return req.SendWebRequest();
+
+        bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode >= 200 && req.responseCode < 300;
+        string body = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+        string message = string.IsNullOrWhiteSpace(body) ? $"HTTP {req.responseCode}" : $"HTTP {req.responseCode}: {body}";
+
+        if (!ok)
+            Debug.LogError($"UploadProfilePicture failed. endpoint=/api/profiles/{profileId}/pfp, status={req.responseCode}, result={req.result}, body={body}");
+
+        done?.Invoke(ok, message);
+    }
+
+    private PlayerProfileDto TryParseCreatedProfile(string createMsg)
+    {
+        try
+        {
+            return JsonUtility.FromJson<PlayerProfileDto>(createMsg);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private bool HasValidProfileId(PlayerProfileDto profile)
+    {
+        return profile != null && profile.id > 0;
     }
 
     // ──────────────────────────────────────────────
@@ -241,29 +476,57 @@ public class AuthClient : MonoBehaviour
 
         yield return req.SendWebRequest();
 
-        if (req.result != UnityWebRequest.Result.Success)
+        bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode >= 200 && req.responseCode < 300;
+        if (!ok)
         {
-            Debug.LogError($"GetProfiles failed: {req.downloadHandler.text}");
+            string errorBody = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+            Debug.LogError($"GetProfiles failed: HTTP {req.responseCode}, result={req.result}, body={errorBody}");
             done(false, null);
             yield break;
         }
 
         var rawJson = req.downloadHandler.text?.Trim();
-        PlayerProfileDto[] profiles;
-
-        if (!string.IsNullOrEmpty(rawJson) && rawJson.StartsWith("["))
+        if (!TryParseProfilesJson(rawJson, out var profiles))
         {
-            profiles = JsonHelper.FromJsonArray<PlayerProfileDto>(rawJson);
-        }
-        else
-        {
-            var resp = JsonUtility.FromJson<PlayerProfileListResponse>(rawJson);
-            profiles = resp != null ? resp.profiles : Array.Empty<PlayerProfileDto>();
+            done(false, null);
+            yield break;
         }
 
         Debug.Log("Response JSON: " + rawJson);
         Debug.Log("Profiles: " + string.Join(", ", Array.ConvertAll(profiles, p => p.display_name)));
         done(true, profiles);
+    }
+
+    private bool TryParseProfilesJson(string rawJson, out PlayerProfileDto[] profiles)
+    {
+        profiles = Array.Empty<PlayerProfileDto>();
+
+        if (string.IsNullOrWhiteSpace(rawJson) || string.Equals(rawJson, "null", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        try
+        {
+            if (rawJson.StartsWith("["))
+            {
+                profiles = JsonHelper.FromJsonArray<PlayerProfileDto>(rawJson) ?? Array.Empty<PlayerProfileDto>();
+                return true;
+            }
+
+            if (rawJson.StartsWith("{"))
+            {
+                var response = JsonUtility.FromJson<PlayerProfileListResponse>(rawJson);
+                profiles = response?.profiles ?? Array.Empty<PlayerProfileDto>();
+                return true;
+            }
+
+            Debug.LogError($"GetProfiles returned unexpected JSON format: {rawJson}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"GetProfiles JSON parse failed: {ex.Message}. Body={rawJson}");
+            return false;
+        }
     }
 
     public void SelectProfile(PlayerProfileDto profile)
