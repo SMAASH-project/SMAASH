@@ -20,7 +20,15 @@ using UnityEngine.UI;
     public int id;
     public string display_name;
     public long coins;
-    public string last_login;
+}
+
+[Serializable] public class PlayerProfileCreateResponseDto
+{
+    public int ID;
+    public string DisplayName;
+    public long Coins;
+    public string PfpUri;
+    public int UserID;
 }
 
 [Serializable] public class UserCreateDto
@@ -305,6 +313,10 @@ public class AuthClient : MonoBehaviour
 
         PlayerProfileDto createdProfile = TryParseCreatedProfile(createMsg);
 
+        Debug.Log("Raw backend response: " + createMsg);
+        Debug.Log("Parsed profile Id: " + createdProfile?.id);
+        Debug.Log("Parsed profile display_name: " + createdProfile?.display_name);
+        
         if (!HasValidProfileId(createdProfile))
         {
             string parseError = "Profile created, but backend response is not compatible with PlayerProfileDto (missing valid id/display_name).";
@@ -366,7 +378,17 @@ public class AuthClient : MonoBehaviour
     {
         try
         {
-            return JsonUtility.FromJson<PlayerProfileDto>(createMsg);
+            var response = JsonUtility.FromJson<PlayerProfileCreateResponseDto>(createMsg);
+            if (response != null)
+            {
+                return new PlayerProfileDto
+                {
+                    id = response.ID,
+                    display_name = response.DisplayName,
+                    coins = response.Coins
+                };
+            }
+            return null;
         }
         catch
         {
