@@ -374,6 +374,40 @@ public class AuthClient : MonoBehaviour
         done?.Invoke(ok, message);
     }
 
+    public IEnumerator DeleteProfile(int profileId, Action<bool, string> done)
+    {
+        if (profileId <= 0)
+        {
+            done?.Invoke(false, "Invalid profile id");
+            yield break;
+        }
+
+        string token = AccessToken;
+        if (string.IsNullOrWhiteSpace(token))
+            token = PlayerPrefs.GetString(AccessKey, "");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            done?.Invoke(false, "Missing access token");
+            yield break;
+        }
+
+        using var req = UnityWebRequest.Delete($"{BaseUrl}/api/profiles/{profileId}");
+        req.SetRequestHeader("Authorization", $"Bearer {token}");
+        req.SetRequestHeader("Accept", "application/json");
+
+        yield return req.SendWebRequest();
+
+        bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode == 204;
+        string body = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+        string message = ok ? "Profile deleted successfully" : $"Delete failed: HTTP {req.responseCode}";
+
+        if (!ok)
+            Debug.LogError($"DeleteProfile failed. profile_id={profileId}, status={req.responseCode}, result={req.result}, body={body}");
+
+        done?.Invoke(ok, message);
+    }
+
     private PlayerProfileDto TryParseCreatedProfile(string createMsg)
     {
         try
