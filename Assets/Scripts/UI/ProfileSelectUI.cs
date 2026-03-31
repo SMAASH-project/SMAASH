@@ -90,7 +90,21 @@ public class ProfileSelectUI : MonoBehaviour
                 var pfpUri = $"{authClient.BaseUrl}/api/profiles/{p.id}/pfp"; // /api/profiles/{id}/pfp
                 TrySetProfileAvatar(btn, pfpUri);
 
+                // Main profile selection
                 btn.onClick.AddListener(() => authClient.SelectProfile(p));
+
+                // Find DeleteButton (sibling, not child)
+                var deleteBtn = btn.transform.Find("DeleteButton")?.GetComponent<Button>();
+                if (deleteBtn != null)
+                {
+                    deleteBtn.onClick.RemoveAllListeners();
+                    deleteBtn.onClick.AddListener(() => OnDeleteProfileButtonClicked(p));
+                }
+                else
+                {
+                    Debug.LogWarning("DeleteButton not found in profile card hierarchy");
+                }
+
                 createdCount++;
             }
 
@@ -232,5 +246,50 @@ public class ProfileSelectUI : MonoBehaviour
         {
             Debug.LogWarning("Logout button not found. Checked for: 'LogOut', 'logout', 'Logout'. Check the exact button name and that it is active in the scene.");
         }
+    }
+
+    private void OnDeleteProfileButtonClicked(PlayerProfileDto profile)
+    {
+        if (profile == null || profile.id <= 0)
+        {
+            SetStatus("Invalid profile.");
+            return;
+        }
+
+        // Show confirmation dialog
+        bool confirm = ShowDeleteConfirmation(profile.display_name);
+        if (!confirm) return;
+
+        SetStatus($"Deleting '{profile.display_name}'...");
+
+        StartCoroutine(authClient.DeleteProfile(profile.id, (success, message) =>
+        {
+            if (success)
+            {
+                SetStatus($"'{profile.display_name}' deleted successfully.");
+                Debug.Log(message);
+                // Reload the profiles list
+                Invoke(nameof(LoadProfiles), 0.5f);
+            }
+            else
+            {
+                SetStatus($"Delete failed: {message}");
+                Debug.LogError($"Delete profile failed: {message}");
+            }
+        }));
+    }
+
+    private bool ShowDeleteConfirmation(string profileName)
+    {
+        // Simple confirmation using Dialog or just return true for immediate delete
+        // For a better UX, you could implement a confirmation panel
+        // For now, we'll use a simple approach: log the action and return true
+        return true;
+        
+        // TODO: Implement a proper confirmation dialog panel if needed:
+        // - Create a confirmation dialog prefab with "Yes/No" buttons
+        // - Show it before deletion
+        // - Wait for user input
+        // - Return the result
     }
 }
