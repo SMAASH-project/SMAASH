@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,6 +34,8 @@ public class MatchResultDto
 
 public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 {
+    private const string ApiDateTimeFormat = "dd MMM yy HH:mm 'UTC'";
+
     [Header("Setup")]
     public Character_Database characterDatabase;
     [SerializeField] private string _gameSceneName = "sc_main";
@@ -287,7 +290,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
                 SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
             });
 
-            _matchStartedAt = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            _matchStartedAt = FormatApiUtcNow();
             _isEndingMatch = false;
         }
         catch (Exception ex)
@@ -317,9 +320,9 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             authClient = FindObjectOfType<AuthClient>();
 
         string startedAt = string.IsNullOrWhiteSpace(_matchStartedAt)
-            ? DateTime.UtcNow.ToString("yyyy-MM-dd")
+            ? FormatApiUtcNow()
             : _matchStartedAt;
-        string endedAt = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        string endedAt = FormatApiUtcNow();
 
         int localPhotonPlayerId = _runner != null ? _runner.LocalPlayer.PlayerId : -1;
         string localResult = localPhotonPlayerId == deadPlayerId ? "lose" : "win";
@@ -340,7 +343,11 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             }
         };
 
-        Debug.Log($"[NetworkHandler] Match ended. Payload: {JsonUtility.ToJson(payload)}");
+        Debug.Log($"[MATCH POST] Match ended. Timestamp format={ApiDateTimeFormat}, started_at={startedAt}, ended_at={endedAt}");
+        Debug.Log($"[MATCH POST] Payload: {JsonUtility.ToJson(payload, true)}");
+
+        if (payload.participation.player_id <= 0)
+            Debug.LogWarning("[MATCH POST] selected_profile_id is missing or invalid. Match post is likely to fail.");
 
         if (authClient != null)
         {
@@ -356,13 +363,13 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             }));
 
             if (!done || !success)
-                Debug.LogWarning($"[NetworkHandler] Match result post failed: {response}");
+                Debug.LogWarning($"[MATCH POST] Failed. Endpoint={matchResultEndpoint}, Response={response}");
             else
-                Debug.Log($"[NetworkHandler] Match result posted: {response}");
+                Debug.Log($"[MATCH POST] Success. Endpoint={matchResultEndpoint}, Response={response}");
         }
         else
         {
-            Debug.LogWarning("[NetworkHandler] AuthClient not found. Skipping match result post.");
+            Debug.LogWarning("[MATCH POST] AuthClient not found. Skipping match result post.");
         }
 
         CancelMatchmaking();
@@ -379,6 +386,12 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             photonSessionName = _lastRoomName;
 
         return ToDeterministicGuid(photonSessionName);
+    }
+
+    private static string FormatApiUtcNow()
+    {
+        // Backend date parsing expects an RFC822-style timestamp.
+        return DateTime.UtcNow.ToString(ApiDateTimeFormat, CultureInfo.InvariantCulture);
     }
 
     private static string ToDeterministicGuid(string value)
