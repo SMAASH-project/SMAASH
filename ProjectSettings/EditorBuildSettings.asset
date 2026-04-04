@@ -32,5 +32,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/sc_create_profile.unity
     guid: db87a8faf8cc04179b5cbe55fe56b074
+  - enabled: 1
+    path: Assets/Scenes/sc_leaderboard.unity
+    guid: c3c57fe62ac7f4c4a9ea1071319771c7
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: ffa0d76742c1c4138974fb117da34ad5, type: 2}

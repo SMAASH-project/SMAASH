@@ -374,6 +374,11 @@ public class AuthClient : MonoBehaviour
         done?.Invoke(ok, message);
     }
 
+
+    /// ──────────────────────────────────────────────
+    /// DELETE PROFILE
+    /// ──────────────────────────────────────────────
+
     public IEnumerator DeleteProfile(int profileId, Action<bool, string> done)
     {
         if (profileId <= 0)
@@ -608,6 +613,10 @@ public class AuthClient : MonoBehaviour
         string normalizedEndpoint = endpoint.StartsWith("/") ? endpoint : "/" + endpoint;
         string json = JsonUtility.ToJson(payload);
 
+    Debug.Log($"[AUTH POST] POST {BaseUrl}{normalizedEndpoint}");
+    Debug.Log($"[AUTH POST] Authorization header present={(!string.IsNullOrWhiteSpace(token))}, tokenLength={(token != null ? token.Length : 0)}");
+    Debug.Log($"[AUTH POST] Request JSON: {json}");
+
         using var req = new UnityWebRequest($"{BaseUrl}{normalizedEndpoint}", UnityWebRequest.kHttpVerbPOST);
         req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
@@ -619,6 +628,7 @@ public class AuthClient : MonoBehaviour
 
         bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode >= 200 && req.responseCode < 300;
         string body = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+        Debug.Log($"[AUTH POST] Result={req.result}, status={req.responseCode}, body={body}");
         done?.Invoke(ok, string.IsNullOrWhiteSpace(body) ? $"HTTP {req.responseCode}" : body);
     }
 
