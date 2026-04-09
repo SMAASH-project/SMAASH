@@ -134,6 +134,10 @@ public class PlayerHealth : NetworkBehaviour
 
     [Header("Settings")]
     public int maxHealth = 100;
+
+    [Header("Out Of Bounds")]
+    [SerializeField] private bool enableYFallDeath = true;
+    [SerializeField] private float fallDeathY = -20f;
     
     [Networked, OnChangedRender(nameof(OnHealthChanged))]
     private int CurrentHealth { get; set; }
@@ -173,6 +177,12 @@ public class PlayerHealth : NetworkBehaviour
         RPC_RequestDamage(damage);
     }
 
+    public void RequestOutOfBoundsDeath()
+    {
+        if (isDead) return;
+        RPC_RequestOutOfBoundsDeath();
+    }
+
     [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
     private void RPC_RequestDamage(int damage)
     {
@@ -182,9 +192,32 @@ public class PlayerHealth : NetworkBehaviour
 
         if (CurrentHealth <= 0)
         {
-            isDead = true;
-            RPC_BroadcastDeath(Object.InputAuthority.PlayerId);
+            KillPlayer();
         }
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+    private void RPC_RequestOutOfBoundsDeath()
+    {
+        if (isDead) return;
+        KillPlayer();
+    }
+
+    public override void FixedUpdateNetwork()
+    {
+        if (!Object.HasStateAuthority || isDead || !enableYFallDeath)
+            return;
+
+        if (transform.position.y <= fallDeathY)
+            KillPlayer();
+    }
+
+    private void KillPlayer()
+    {
+        if (isDead) return;
+        isDead = true;
+        CurrentHealth = 0;
+        RPC_BroadcastDeath(Object.InputAuthority.PlayerId);
     }
     
 
