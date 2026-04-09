@@ -245,7 +245,6 @@ MonoBehaviour:
   jumpingPower: 10
   isCountingDown: 0
   maxAirJumps: 1
-  logJumpDebug: 1
   _IsFacingLeft: 0
   _NetworkSpeed: 0
   _NetworkIsJumping: 0
@@ -692,8 +691,8 @@ Transform:
   m_GameObject: {fileID: 5818609464253182864}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.37, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: -0.45, z: 0}
+  m_LocalScale: {x: 2, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2750386067445821512}

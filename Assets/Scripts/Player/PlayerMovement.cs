@@ -179,7 +179,7 @@ public class PlayerMovement : NetworkBehaviour
         spriteRenderer.flipX = IsFacingLeft;
     }
 
-    bool IsGrounded() => Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+    bool IsGrounded() => Physics2D.OverlapCircle(groundCheck.position, 0.5f, groundLayer);
 
     private class JumpButtonPressRelay : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
