@@ -20,6 +20,7 @@ public class MatchParticipationDto
     public int character_id;
     public string result;
     public string network_status;
+    public int coins_awarded;
 }
 
 [Serializable]
@@ -80,7 +81,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     public struct MatchEndUiData
     {
         public bool IsWin;
-        public int RewardCoins;
+        public int AwardedCoins;
         public int DeadPlayerId;
     }
 
@@ -341,12 +342,12 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         string localResult = localPhotonPlayerId == deadPlayerId ? "lose" : "win";
         string networkStatus = _lastGameMode == GameMode.Single ? "offline" : "online";
         bool isWin = localResult == "win";
-        int simulatedCoinReward = RollCoinReward(isWin);
+        int awardedCoinAmount = GetAwardedCoinAmount(isWin);
 
         OnLocalMatchEnded?.Invoke(new MatchEndUiData
         {
             IsWin = isWin,
-            RewardCoins = simulatedCoinReward,
+            AwardedCoins = awardedCoinAmount,
             DeadPlayerId = deadPlayerId
         });
 
@@ -361,7 +362,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
                 player_id = PlayerPrefs.GetInt("selected_profile_id", -1),
                 character_id = ResolveLocalCharacterId(),
                 result = localResult,
-                network_status = networkStatus
+                network_status = networkStatus,
+                coins_awarded = awardedCoinAmount
             }
         };
 
@@ -410,7 +412,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         CancelMatchmaking();
     }
 
-    private int RollCoinReward(bool isWin)
+    private int GetAwardedCoinAmount(bool isWin)
     {
         Vector2Int range = isWin ? winCoinRange : loseCoinRange;
         int min = Mathf.Min(range.x, range.y);
