@@ -85,7 +85,7 @@ public class ProfileSelectUI : MonoBehaviour
                 var btn = Instantiate(profileButtonPrefab, listRoot);
                 var label = btn.GetComponentInChildren<TMP_Text>();
                 if (label != null)
-                    label.text = $"{p.display_name}  •  Coins: {p.coins}";
+                    label.text = $"{p.display_name}\nCoins: {p.coins}";
 
                 var pfpUri = $"{authClient.BaseUrl}/api/profiles/{p.id}/pfp"; // /api/profiles/{id}/pfp
                 TrySetProfileAvatar(btn, pfpUri);
