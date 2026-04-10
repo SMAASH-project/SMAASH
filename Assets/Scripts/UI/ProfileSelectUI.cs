@@ -138,9 +138,23 @@ public class ProfileSelectUI : MonoBehaviour
         if (button == null) return null;
 
         var images = button.GetComponentsInChildren<Image>(true);
+
+        // Preferred target: explicit content image name.
         foreach (var image in images)
         {
             if (image.gameObject == button.gameObject) continue;
+            if (image.TryGetComponent<Mask>(out _)) continue;
+            if (image.TryGetComponent<RectMask2D>(out _)) continue;
+
+            if (string.Equals(image.gameObject.name, "AvatarImage", System.StringComparison.OrdinalIgnoreCase))
+                return image;
+        }
+
+        foreach (var image in images)
+        {
+            if (image.gameObject == button.gameObject) continue;
+            if (image.TryGetComponent<Mask>(out _)) continue;
+            if (image.TryGetComponent<RectMask2D>(out _)) continue;
 
             var lower = image.gameObject.name.ToLowerInvariant();
             if (lower.Contains("avatar") || lower.Contains("pfp") || lower.Contains("profile"))
@@ -149,6 +163,10 @@ public class ProfileSelectUI : MonoBehaviour
 
         foreach (var image in images)
         {
+            if (image.gameObject == button.gameObject) continue;
+            if (image.TryGetComponent<Mask>(out _)) continue;
+            if (image.TryGetComponent<RectMask2D>(out _)) continue;
+
             if (image.gameObject != button.gameObject)
                 return image;
         }
