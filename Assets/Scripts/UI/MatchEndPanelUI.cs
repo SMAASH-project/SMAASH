@@ -53,7 +53,7 @@ public class MatchEndPanelUI : MonoBehaviour
             resultText.text = data.IsWin ? winLabel : loseLabel;
 
         if (coinsText != null)
-            coinsText.text = string.Format(coinFormat, data.RewardCoins);
+            coinsText.text = string.Format(coinFormat, data.AwardedCoins);
 
         HideGameplayUI();
         SetPanelVisible(true);
