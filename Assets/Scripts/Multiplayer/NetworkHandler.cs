@@ -48,6 +48,10 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string matchResultEndpoint = "/api/matches";
     [SerializeField] private int levelId = 1;
 
+    [Header("Prototype Match End UI")]
+    [SerializeField] private Vector2Int winCoinRange = new Vector2Int(25, 60);
+    [SerializeField] private Vector2Int loseCoinRange = new Vector2Int(5, 20);
+
     [Header("Spawn Points")]
     [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
     [SerializeField] private string player2SpawnPointName = "Player2_SpawnPoint";
@@ -72,6 +76,15 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     private bool _isDisposing = false;
     private bool _isEndingMatch = false;
     private string _matchStartedAt = string.Empty;
+
+    public struct MatchEndUiData
+    {
+        public bool IsWin;
+        public int RewardCoins;
+        public int DeadPlayerId;
+    }
+
+    public static event Action<MatchEndUiData> OnLocalMatchEnded;
 
     private void Awake()
     {
@@ -327,6 +340,15 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         int localPhotonPlayerId = _runner != null ? _runner.LocalPlayer.PlayerId : -1;
         string localResult = localPhotonPlayerId == deadPlayerId ? "lose" : "win";
         string networkStatus = _lastGameMode == GameMode.Single ? "offline" : "online";
+        bool isWin = localResult == "win";
+        int simulatedCoinReward = RollCoinReward(isWin);
+
+        OnLocalMatchEnded?.Invoke(new MatchEndUiData
+        {
+            IsWin = isWin,
+            RewardCoins = simulatedCoinReward,
+            DeadPlayerId = deadPlayerId
+        });
 
         var payload = new MatchResultDto
         {
@@ -371,8 +393,29 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         {
             Debug.LogWarning("[MATCH POST] AuthClient not found. Skipping match result post.");
         }
+    }
 
+    public void ExitMatchToLobby()
+    {
+        if (!_isEndingMatch)
+        {
+            Debug.LogWarning("[NetworkHandler] Exit requested before match ended. Ignoring.");
+            return;
+        }
+
+        if (_isCancellingMatchmaking || _isDisposing)
+            return;
+
+        Debug.Log("[NetworkHandler] Exit requested from match-end UI. Returning to lobby.");
         CancelMatchmaking();
+    }
+
+    private int RollCoinReward(bool isWin)
+    {
+        Vector2Int range = isWin ? winCoinRange : loseCoinRange;
+        int min = Mathf.Min(range.x, range.y);
+        int max = Mathf.Max(range.x, range.y);
+        return UnityEngine.Random.Range(min, max + 1);
     }
 
     private string ResolveSessionId()
