@@ -27,7 +27,7 @@
                     "name": "Jump",
                     "type": "Button",
                     "id": "d19ebdc7-310b-490a-a047-5a603493ae18",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -36,7 +36,7 @@
                     "name": "Attack",
                     "type": "Button",
                     "id": "63f41480-bf33-46a7-a869-2f69cc8b39d0",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false

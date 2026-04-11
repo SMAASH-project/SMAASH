@@ -48,6 +48,7 @@ public class MeleeAttack : NetworkBehaviour
     private void OnAttackInput(InputAction.CallbackContext context)
     {
         if (!canAttack) return;
+        Debug.Log("Attack input received. Sending RPC to perform attack.");
 
         // Send RPC to state authority to process attack
         RPC_PerformAttack(spriteRenderer.flipX);

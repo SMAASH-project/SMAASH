@@ -4050,8 +4050,9 @@ GameObject:
   m_IsActive: 1
 --- !u!224 &1339645636
 RectTransform:
-  m_CorrespondingSourceObject: {fileID: 2346229767559553077, guid: e85a882cc644f4724aad16ad71d37728, type: 3}
-  m_PrefabInstance: {fileID: 1271605909413535083}
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1339645635}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -4063,8 +4064,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -360, y: 267}
-  m_SizeDelta: {x: 204.6113, y: 197.8623}
+  m_AnchoredPosition: {x: -360, y: 260}
+  m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1339645637
 MonoBehaviour:
@@ -5121,10 +5122,10 @@ GameObject:
   - component: {fileID: 1995466238}
   - component: {fileID: 1995466241}
   - component: {fileID: 1995466240}
-  - component: {fileID: 1995466239}
   - component: {fileID: 1995466243}
   - component: {fileID: 1995466242}
   - component: {fileID: 1995466244}
+  - component: {fileID: 1995466245}
   m_Layer: 5
   m_Name: Attack
   m_TagString: Untagged
@@ -5134,22 +5135,23 @@ GameObject:
   m_IsActive: 1
 --- !u!224 &1995466238
 RectTransform:
-  m_CorrespondingSourceObject: {fileID: 4184428523643195903, guid: cbbfd0b6d145e48c68cbc54d23d0c7d4, type: 3}
-  m_PrefabInstance: {fileID: 6814479655005820394}
-  m_PrefabAsset: {fileID: 0}
---- !u!1001 &1271605909413535083
-PrefabInstance:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1995466237}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6d54531977ecb194c95e2d3aa7a5d72a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ControlPath: <Gamepad>/buttonEast
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 694794316}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: -700, y: 260}
+  m_SizeDelta: {x: 200, y: 200}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1995466240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5268,6 +5270,19 @@ MonoBehaviour:
   attack_anim: {fileID: 1995466243}
   attack_btn: {fileID: 1995466242}
   isDead: 0
+--- !u!114 &1995466245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995466237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d54531977ecb194c95e2d3aa7a5d72a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ControlPath: <Gamepad>/buttonEast
 --- !u!114 &2104970025
 MonoBehaviour:
   m_ObjectHideFlags: 0

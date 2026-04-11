@@ -144,8 +144,8 @@ GameObject:
   - component: {fileID: 2455103009498964236}
   - component: {fileID: -4624132584009430742}
   - component: {fileID: 3719406029350148854}
-  - component: {fileID: 4157545915337348763}
   - component: {fileID: 2741058244905976895}
+  - component: {fileID: 640124269840404968}
   m_Layer: 7
   m_Name: slime
   m_TagString: Player
@@ -189,6 +189,8 @@ MonoBehaviour:
   playerMovement: {fileID: 0}
   meleeAttack: {fileID: 0}
   maxHealth: 100
+  enableYFallDeath: 1
+  fallDeathY: -20
   _isDead: 0
 --- !u!114 &5571808162296724515
 MonoBehaviour:
@@ -209,9 +211,14 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  jumpButton: {fileID: 0}
   speed: 8
   jumpingPower: 10
   isCountingDown: 0
+  maxAirJumps: 1
+  _IsFacingLeft: 0
+  _NetworkSpeed: 0
+  _NetworkIsJumping: 0
 --- !u!212 &4486674761032846597
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -528,6 +535,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   yOffset: 3.8
   zOffset: -2
+  CamIsActive: 0
+  blackScreenCanvasGroup: {fileID: 0}
+  loadingText: {fileID: 0}
 --- !u!114 &2455103009498964236
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -549,8 +559,8 @@ MonoBehaviour:
   - {fileID: 5571808162296724515}
   - {fileID: 9175846915309582073}
   - {fileID: 3719406029350148854}
-  - {fileID: 4157545915337348763}
   - {fileID: 2741058244905976895}
+  - {fileID: 640124269840404968}
   ForceRemoteRenderTimeframe: 0
 --- !u!114 &-4624132584009430742
 MonoBehaviour:
@@ -564,7 +574,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 340c386edf99f4e518557c34fa78bcce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpButton: {fileID: 0}
 --- !u!114 &3719406029350148854
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -588,25 +597,6 @@ MonoBehaviour:
     Position: 0.01
     Rotation: 0.01
     Scale: 0.01
---- !u!114 &4157545915337348763
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4021654725828388503}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 836371ce0f49647e1bf381c262a4d179, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  animator: {fileID: 7715241876941772291}
-  attackPoint: {fileID: 9041520338673992418}
-  attackPointOpposite: {fileID: 6700760403166821046}
-  spriteRenderer: {fileID: 4486674761032846597}
-  damage: 20
-  bulletPrefab:
-    RawGuidValue: deb116c1fdf704320a6219415fc6902e
 --- !u!114 &2741058244905976895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -625,6 +615,25 @@ MonoBehaviour:
   StateHashes: 00000000fcb21391cf0136a6
   TriggerHashes: 00000000
   TotalWords: 3
+--- !u!114 &640124269840404968
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4021654725828388503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 836371ce0f49647e1bf381c262a4d179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 7715241876941772291}
+  attackPoint: {fileID: 9041520338673992418}
+  attackPointOpposite: {fileID: 6700760403166821046}
+  spriteRenderer: {fileID: 4486674761032846597}
+  damage: 20
+  bulletPrefab:
+    RawGuidValue: deb116c1fdf704320a6219415fc6902e
 --- !u!1 &4114129097919910443
 GameObject:
   m_ObjectHideFlags: 0

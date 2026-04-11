@@ -44,6 +44,7 @@ public class ShootingAttack : NetworkBehaviour
 
     private void OnAttackInput(InputAction.CallbackContext context)
     {
+        Debug.Log("Attack input received. Sending RPC to perform attack.");
         if (!canAttack) return;
 
         // Determine which attack point to use based on sprite direction
