@@ -14,10 +14,12 @@ public class MeleeAttack : NetworkBehaviour
     public LayerMask enemyLayer;
     public int damage = 20;
 
+    public bool isCountingDown = false;    
+
     private InputActionAsset inputAsset;
     private InputActionMap playerMap;
     private bool canAttack = true;
-
+    
     // Network synced attack state
     [Networked] public bool IsAttacking { get; set; }
 
@@ -26,6 +28,7 @@ public class MeleeAttack : NetworkBehaviour
         inputAsset = GetComponent<PlayerInput>()?.actions;
         playerMap = inputAsset?.FindActionMap("Player");
     }
+
 
     public override void Spawned()
     {
@@ -47,7 +50,7 @@ public class MeleeAttack : NetworkBehaviour
 
     private void OnAttackInput(InputAction.CallbackContext context)
     {
-        if (!canAttack) return;
+        if (!canAttack || isCountingDown) return;
         Debug.Log("Attack input received. Sending RPC to perform attack.");
 
         // Send RPC to state authority to process attack
@@ -101,7 +104,7 @@ public class MeleeAttack : NetworkBehaviour
     IEnumerator AttackCooldown()
     {
         canAttack = false;
-        yield return new WaitForSeconds(0.5f); // Local cooldown
+        yield return new WaitForSeconds(1f); // Local cooldown
         canAttack = true;
     }
 

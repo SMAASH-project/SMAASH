@@ -11,11 +11,14 @@ public class ButtonCooldowns : MonoBehaviour
 
     public bool isDead = false;
 
+    public bool isCountingDown = false;
+    private bool isOnCooldown = false;
+
 
     // Start is called before the first frame update
     void Start()
     {
-        attack_btn.interactable = true;
+        RefreshButtonState();
     }
 
     void Awake()
@@ -31,17 +34,40 @@ public class ButtonCooldowns : MonoBehaviour
     }
 
     void Attack_Button_pressed(){
-        if(isDead == false){
-            StartCoroutine(AttackCooldownStart());
-        }
+        if (isDead || isCountingDown || isOnCooldown)
+            return;
+
+        StartCoroutine(AttackCooldownStart());
     }
 
     IEnumerator AttackCooldownStart(){
-       attack_anim.SetTrigger("AttackCooldown");
-       attack_btn.interactable = false;
+       if (isDead || isCountingDown || isOnCooldown)
+           yield break;
+
+       isOnCooldown = true;
+       RefreshButtonState();
+
+       if (attack_anim != null)
+           attack_anim.SetTrigger("AttackCooldown");
+
        yield return new WaitForSecondsRealtime(1);
-       
-       attack_btn.interactable = true;
+
+       isOnCooldown = false;
+       RefreshButtonState();
+    }
+
+    public void SetCountdownState(bool countingDown)
+    {
+        isCountingDown = countingDown;
+        RefreshButtonState();
+    }
+
+    private void RefreshButtonState()
+    {
+        if (attack_btn == null)
+            return;
+
+        attack_btn.interactable = !isDead && !isCountingDown && !isOnCooldown;
     }
 
 }

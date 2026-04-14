@@ -12,6 +12,7 @@ public class ShootingAttack : NetworkBehaviour
     public SpriteRenderer spriteRenderer;
     public int damage = 20;
     public NetworkPrefabRef bulletPrefab;
+    public bool isCountingDown = false;
 
     private InputActionAsset inputAsset;
     private InputActionMap playerMap;
@@ -45,7 +46,7 @@ public class ShootingAttack : NetworkBehaviour
     private void OnAttackInput(InputAction.CallbackContext context)
     {
         Debug.Log("Attack input received. Sending RPC to perform attack.");
-        if (!canAttack) return;
+        if (!canAttack || isCountingDown) return;
 
         // Determine which attack point to use based on sprite direction
         Transform activePoint = spriteRenderer.flipX ? attackPointOpposite : attackPoint;

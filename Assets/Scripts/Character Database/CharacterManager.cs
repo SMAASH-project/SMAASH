@@ -26,6 +26,7 @@ public class CharacterManager : MonoBehaviour
         networkHandler = NetworkHandler.Instance != null
             ? NetworkHandler.Instance
             : FindObjectOfType<NetworkHandler>();
+
         startButton.onClick.AddListener(changeToWaitingRoom);
         if(!PlayerPrefs.HasKey("selectedOption"))
         {
@@ -70,7 +71,27 @@ public class CharacterManager : MonoBehaviour
     {
         Character character = characterDatabase.GetCharacter(selectedOption);
         artworkSprite.sprite = character.characterSprite;
+        ApplyArtworkPlacement(character.characterSprite);
         nameText.text = character.character_name;
+    }
+
+    private void ApplyArtworkPlacement(Sprite sprite)
+    {
+        Transform artworkTransform = artworkSprite.transform;
+        bool isKnightIcon = sprite != null && string.Equals(sprite.name, "KnightIcon", System.StringComparison.OrdinalIgnoreCase);
+
+        float zScale = artworkTransform.localScale.z;
+        float zPos = artworkTransform.localPosition.z;
+
+        if (isKnightIcon)
+        {
+            artworkTransform.localScale = new Vector3(2f, 2f, zScale);
+            artworkTransform.localPosition = new Vector3(-0.5f, 0f, zPos);
+            return;
+        }
+
+        artworkTransform.localScale = new Vector3(3f, 3f, zScale);
+        artworkTransform.localPosition = new Vector3(0f, 0f, zPos);
     }
 
     //Lekerdezi a karakter sorszamat

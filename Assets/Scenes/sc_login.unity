@@ -352,7 +352,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c22db01e91c294919bbdbf123c702774, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useLocalhost: 0
+  useLocalhost: 1
   localhostUrl: http://localhost:8080
   deployedUrl: https://smaash-web-backend.onrender.com
   profileSelectScene: sc_profile_select

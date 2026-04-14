@@ -92,7 +92,12 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
-        if(isCountingDown) return;
+        if (isCountingDown)
+        {
+            rb.velocity = Vector2.zero;
+            UpdateNetworkedAnimationValues();
+            return;
+        }
 
         PlayerHealth playerHealth = GetComponent<PlayerHealth>();
         if (playerHealth != null && playerHealth.isDead)
@@ -133,6 +138,15 @@ public class PlayerMovement : NetworkBehaviour
     void OnJumpButtonReleased()
     {
         isJumpButtonHeld = false;
+    }
+
+    public void ResetJumpButtonState()
+    {
+        if (!Object.HasInputAuthority || !isJumpButtonOwner)
+            return;
+
+        isJumpButtonHeld = false;
+        SetupJumpButton();
     }
 
     void Jump()

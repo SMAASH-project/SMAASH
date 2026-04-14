@@ -220,6 +220,8 @@ MonoBehaviour:
   playerMovement: {fileID: 8095103847225091386}
   meleeAttack: {fileID: 4356006495732988501}
   maxHealth: 100
+  enableYFallDeath: 1
+  fallDeathY: -20
   _isDead: 0
 --- !u!114 &8095103847225091386
 MonoBehaviour:
@@ -267,7 +269,7 @@ MonoBehaviour:
   attackRange: 1.04
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 136
+    m_Bits: 392
   damage: 20
   _IsAttacking: 0
 --- !u!212 &5567647222599282870
@@ -442,7 +444,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Actions: {fileID: -944628639613478452, guid: 75e24fe6e5b984faa892eafe045ba434, type: 3}
-  m_NotificationBehavior: 2
+  m_NotificationBehavior: 0
   m_UIInputModule: {fileID: 0}
   m_DeviceLostEvent:
     m_PersistentCalls:

@@ -14,12 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   character:
   - character_id: 1
-    characterSprite: {fileID: -1783264911, guid: 4695bcf3b1fadbb41a6dc82ac20e95f1, type: 3}
+    characterSprite: {fileID: 21300000, guid: 883433abdd9744cec8a195635cb5ed96, type: 2}
     character_name: Samurai
     playerPrefab:
       RawGuidValue: 69c73ce674bc74beeb3d264ee70c9a32
   - character_id: 2
-    characterSprite: {fileID: -1527712398, guid: d8d6c0ed367bb42c9adb616440f7d2cb, type: 3}
+    characterSprite: {fileID: 21300000, guid: 1201c7b2a6c5c4bc7a9f5f8fc0cdfaf7, type: 2}
     character_name: Slime
     playerPrefab:
       RawGuidValue: de6098cdc155447bf9cab0e82311e9b0
+  - character_id: 3
+    characterSprite: {fileID: 21300000, guid: 70d58050802f247b0ac91e67d7b9356e, type: 2}
+    character_name: Knight
+    playerPrefab:
+      RawGuidValue: 25e49451f5ce647f8a27cdc74010214f
