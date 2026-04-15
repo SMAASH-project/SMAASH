@@ -243,6 +243,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   jumpButton: {fileID: 0}
+  spriteFacesLeftByDefault: 0
   speed: 8
   jumpingPower: 10
   isCountingDown: 0
@@ -269,8 +270,9 @@ MonoBehaviour:
   attackRange: 1.04
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 392
+    m_Bits: 904
   damage: 20
+  isCountingDown: 0
   _IsAttacking: 0
 --- !u!212 &5567647222599282870
 SpriteRenderer:
