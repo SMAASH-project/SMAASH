@@ -71,14 +71,23 @@ public class CharacterManager : MonoBehaviour
     {
         Character character = characterDatabase.GetCharacter(selectedOption);
         artworkSprite.sprite = character.characterSprite;
-        ApplyArtworkPlacement(character.characterSprite);
+        ApplyArtworkPlacement(character);
         nameText.text = character.character_name;
     }
 
-    private void ApplyArtworkPlacement(Sprite sprite)
+    private void ApplyArtworkPlacement(Character character)
     {
         Transform artworkTransform = artworkSprite.transform;
-        bool isKnightIcon = sprite != null && string.Equals(sprite.name, "KnightIcon", System.StringComparison.OrdinalIgnoreCase);
+        Sprite sprite = character != null ? character.characterSprite : null;
+        string spriteName = sprite != null ? sprite.name : string.Empty;
+        string characterName = character != null ? character.character_name : string.Empty;
+
+        bool isKnightIcon = string.Equals(spriteName, "KnightIcon", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(characterName, "Knight", System.StringComparison.OrdinalIgnoreCase);
+
+        bool isBandit = string.Equals(spriteName, "BanditIcon", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(characterName, "Bandit", System.StringComparison.OrdinalIgnoreCase)
+            || characterName.IndexOf("Bandit", System.StringComparison.OrdinalIgnoreCase) >= 0;
 
         float zScale = artworkTransform.localScale.z;
         float zPos = artworkTransform.localPosition.z;
@@ -87,11 +96,21 @@ public class CharacterManager : MonoBehaviour
         {
             artworkTransform.localScale = new Vector3(2f, 2f, zScale);
             artworkTransform.localPosition = new Vector3(-0.5f, 0f, zPos);
+            artworkSprite.flipX = false;
+            return;
+        }
+
+        if (isBandit)
+        {
+            artworkTransform.localScale = new Vector3(2f, 2f, zScale);
+            artworkTransform.localPosition = new Vector3(-0.1f, 0f, zPos);
+            artworkSprite.flipX = true;
             return;
         }
 
         artworkTransform.localScale = new Vector3(3f, 3f, zScale);
         artworkTransform.localPosition = new Vector3(0f, 0f, zPos);
+        artworkSprite.flipX = false;
     }
 
     //Lekerdezi a karakter sorszamat

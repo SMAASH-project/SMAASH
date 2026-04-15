@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2735848098440217953}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: groundCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 1174607835538974517}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.034, z: 0}
+  m_LocalPosition: {x: 0, y: 0.042, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -40,7 +40,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4998417907757063387}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: AttackPointOpposite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -73,7 +73,7 @@ GameObject:
   - component: {fileID: 3955543347814214663}
   - component: {fileID: 25693199380916790}
   - component: {fileID: 3965091916670538980}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: cam
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -88,7 +88,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5376411191150184023}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2.4, y: 0.73529416, z: 0.7016723}
   m_LocalScale: {x: 1.7054942, y: 1.6353294, z: 1.2608}
   m_ConstrainProportionsScale: 0
@@ -177,8 +177,8 @@ GameObject:
   - component: {fileID: 6769149332781595886}
   - component: {fileID: 2923023786065962024}
   - component: {fileID: -285362910182809824}
-  m_Layer: 8
-  m_Name: knight
+  m_Layer: 9
+  m_Name: bandit
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -194,7 +194,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -6.9, y: -4.33, z: -0.7016723}
-  m_LocalScale: {x: 1.7, y: 1.7, z: 1}
+  m_LocalScale: {x: 1.7, y: 1.7, z: -1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8291934864448061309}
@@ -233,7 +233,7 @@ Animator:
   m_GameObject: {fileID: 6719067914118693587}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 3c2a5b7097b0fe44394328c0bdb9252e, type: 2}
+  m_Controller: {fileID: 9100000, guid: b95265f99b6d90e438df1308a89c8bab, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -256,7 +256,7 @@ MonoBehaviour:
   m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SortKey: 3181577399
+  SortKey: 293278613
   ObjectInterest: 1
   Flags: 262145
   NestedObjects: []
@@ -288,6 +288,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   jumpButton: {fileID: 0}
+  spriteFacesLeftByDefault: 1
   speed: 8
   jumpingPower: 10
   isCountingDown: 0
@@ -314,7 +315,7 @@ MonoBehaviour:
   attackRange: 1
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 392
+    m_Bits: 904
   damage: 20
   isCountingDown: 0
   _IsAttacking: 0
@@ -359,7 +360,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: ae297123f091bbf4e8f1835eb98fb293, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f2ed27d6c1c3ccc48959bcca269d88f0, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -402,18 +403,18 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.066437274, y: 0.90067905}
+  m_Offset: {x: 0.031460762, y: 0.83774453}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
-    oldSize: {x: 3.125, y: 1.71875}
+    oldSize: {x: 1.5, y: 1.5}
     newSize: {x: 3.125, y: 1.71875}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.36855334, y: 0.9235798}
+  m_Size: {x: 0.5643494, y: 0.7977108}
   m_EdgeRadius: 0
 --- !u!58 &1336822641895568027
 CircleCollider2D:
@@ -447,9 +448,9 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.06405283, y: 0.20585543}
+  m_Offset: {x: -0.0046146614, y: 0.23168969}
   serializedVersion: 2
-  m_Radius: 0.20691437
+  m_Radius: 0.19856215
 --- !u!114 &5561462910965818372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -544,9 +545,9 @@ MonoBehaviour:
   Animator: {fileID: 1398060676621360292}
   ApplyTiming: 2
   SyncSettings: -1
-  StateHashes: 000000002b1a167c7940695520e23b685928a8ce24abbf6776f1c04e2afa8626a8b5caa328a981077af3fe2e22ff2dfda6dcfb1298ae24641c8df28b0e9e23138abdf5fc26b8da42a4f796c70f08345d3cbb116af09d878ea2c7f8a788c0a84abb738d7d
-  TriggerHashes: 0000000022ff2dfd98ae24640e9e231326b8da4224abbf67f09d878e
-  TotalWords: 7
+  StateHashes: 000000002b1a167c7940695520e23b685928a8ce0d286c404e865f432afa8626a8b5caa328a981077af3fe2e
+  TriggerHashes: 0000000022ff2dfdd1c8353a24abbf67
+  TotalWords: 6
 --- !u!114 &-285362910182809824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -586,7 +587,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8291934864448061309}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: AttackPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -617,7 +618,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2011909877777617853}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: ceilingCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -633,7 +634,7 @@ Transform:
   m_GameObject: {fileID: 8337929001637531846}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.366, z: 0}
+  m_LocalPosition: {x: 0, y: 1.342, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

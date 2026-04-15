@@ -14,6 +14,9 @@ public class PlayerMovement : NetworkBehaviour
     public LayerMask groundLayer;
     public Button jumpButton;
 
+    [Header("Visual Orientation")]
+    [SerializeField] private bool spriteFacesLeftByDefault;
+
     [Header("Settings")]
     public float speed = 8f;
     public float jumpingPower = 20f;
@@ -190,8 +193,11 @@ public class PlayerMovement : NetworkBehaviour
             animator.SetBool("isJumping", NetworkIsJumping);
         }
         
-        spriteRenderer.flipX = IsFacingLeft;
+        if (spriteRenderer != null)
+            spriteRenderer.flipX = spriteFacesLeftByDefault ? !IsFacingLeft : IsFacingLeft;
     }
+
+    public bool IsVisuallyFlipped => spriteFacesLeftByDefault ? !IsFacingLeft : IsFacingLeft;
 
     bool IsGrounded() => Physics2D.OverlapCircle(groundCheck.position, 0.5f, groundLayer);
 

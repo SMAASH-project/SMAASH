@@ -19,6 +19,7 @@ public class MeleeAttack : NetworkBehaviour
     private InputActionAsset inputAsset;
     private InputActionMap playerMap;
     private bool canAttack = true;
+    private PlayerMovement playerMovement;
     
     // Network synced attack state
     [Networked] public bool IsAttacking { get; set; }
@@ -27,6 +28,7 @@ public class MeleeAttack : NetworkBehaviour
     {
         inputAsset = GetComponent<PlayerInput>()?.actions;
         playerMap = inputAsset?.FindActionMap("Player");
+        playerMovement = GetComponent<PlayerMovement>();
     }
 
 
@@ -54,7 +56,8 @@ public class MeleeAttack : NetworkBehaviour
         Debug.Log("Attack input received. Sending RPC to perform attack.");
 
         // Send RPC to state authority to process attack
-        RPC_PerformAttack(spriteRenderer.flipX);
+        bool facingLeft = playerMovement != null ? playerMovement.IsFacingLeft : spriteRenderer != null && spriteRenderer.flipX;
+        RPC_PerformAttack(facingLeft);
         
         StartCoroutine(AttackCooldown());
     }

@@ -17,11 +17,13 @@ public class ShootingAttack : NetworkBehaviour
     private InputActionAsset inputAsset;
     private InputActionMap playerMap;
     private bool canAttack = true;
+    private PlayerMovement playerMovement;
 
     private void Awake()
     {
         inputAsset = GetComponent<PlayerInput>()?.actions;
         playerMap = inputAsset?.FindActionMap("Player");
+        playerMovement = GetComponent<PlayerMovement>();
     }
 
     public override void Spawned()
@@ -49,10 +51,11 @@ public class ShootingAttack : NetworkBehaviour
         if (!canAttack || isCountingDown) return;
 
         // Determine which attack point to use based on sprite direction
-        Transform activePoint = spriteRenderer.flipX ? attackPointOpposite : attackPoint;
+        bool facingLeft = playerMovement != null ? playerMovement.IsFacingLeft : spriteRenderer != null && spriteRenderer.flipX;
+        Transform activePoint = facingLeft ? attackPointOpposite : attackPoint;
         
         // Send RPC to server to spawn bullet
-        SpawnBulletRpc(activePoint.position, activePoint.rotation, spriteRenderer.flipX);
+        SpawnBulletRpc(activePoint.position, activePoint.rotation, facingLeft);
 
         StartCoroutine(AttackCooldown());
     }

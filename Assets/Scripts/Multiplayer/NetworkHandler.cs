@@ -586,17 +586,13 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
                 runner.SetPlayerObject(player, obj);
                 _spawnedCharacters.Add(player, obj);
 
-                // Face each other
-                if (!isLeftSide) RPC_InitialFlip(obj);
+                var movement = obj.GetComponent<PlayerMovement>();
+                if (movement != null)
+                {
+                    movement.IsFacingLeft = !isLeftSide;
+                }
             }
         }
-    }
-
-    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
-    private void RPC_InitialFlip(NetworkObject playerObj)
-    {
-        var sr = playerObj.GetComponentInChildren<SpriteRenderer>();
-        if (sr != null) sr.flipX = true;
     }
 
     #region Character Selection Logic
