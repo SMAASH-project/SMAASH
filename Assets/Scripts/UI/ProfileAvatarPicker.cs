@@ -5,7 +5,6 @@ using UnityEngine;
 public class ProfileAvatarPicker : MonoBehaviour
 {
     [SerializeField] private CreateProfileSceneUI createProfileSceneUI;
-    [SerializeField] private TMP_InputField imagePathInput;
     [SerializeField] private TMP_Text statusText;
 
     private void Awake()
@@ -17,13 +16,11 @@ public class ProfileAvatarPicker : MonoBehaviour
     {
         EnsureCreateProfileSceneUiRef();
 
+#if UNITY_ANDROID || UNITY_IOS
+        SetStatus("Opening photo library...");
+    NativeGallery.GetImageFromGallery(OnAvatarPickedFromGallery, "Select Avatar", "image/*");
+    #elif UNITY_EDITOR
         string selectedPath = TryOpenSystemPicker();
-
-        if (string.IsNullOrWhiteSpace(selectedPath))
-        {
-            selectedPath = imagePathInput != null ? imagePathInput.text?.Trim() : string.Empty;
-        }
-
         if (string.IsNullOrWhiteSpace(selectedPath))
         {
             SetStatus("No image selected.");
@@ -31,6 +28,28 @@ public class ProfileAvatarPicker : MonoBehaviour
         }
 
         LoadAvatarFromPath(selectedPath);
+#else
+        SetStatus("Gallery picker is available on Android/iOS builds.");
+#endif
+    }
+
+    private void OnAvatarPickedFromGallery(string selectedPath)
+    {
+        if (string.IsNullOrWhiteSpace(selectedPath))
+        {
+            SetStatus("No image selected.");
+            return;
+        }
+
+        Texture2D texture = NativeGallery.LoadImageAtPath(selectedPath, 1024, false);
+        if (texture == null)
+        {
+            SetStatus("Failed to load image.");
+            return;
+        }
+
+        createProfileSceneUI.SetSelectedAvatarTexture(texture);
+        SetStatus("Avatar selected.");
     }
 
     public void OnClearAvatarClicked()
@@ -53,7 +72,7 @@ public class ProfileAvatarPicker : MonoBehaviour
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        if (string.IsNullOrWhiteSpace(filePath))
         {
             SetStatus("Invalid file path.");
             return;
@@ -63,6 +82,7 @@ public class ProfileAvatarPicker : MonoBehaviour
         {
             byte[] bytes = File.ReadAllBytes(filePath);
             var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
             if (!texture.LoadImage(bytes, false))
             {
                 SetStatus("Failed to decode image.");
@@ -78,22 +98,19 @@ public class ProfileAvatarPicker : MonoBehaviour
         }
     }
 
-    private string TryOpenSystemPicker()
+    private void EnsureCreateProfileSceneUiRef()
     {
-#if UNITY_EDITOR
-        string[] filters = { "Image files", "png,jpg,jpeg", "All files", "*" };
-        return UnityEditor.EditorUtility.OpenFilePanelWithFilters("Select Avatar", "", filters);
-#else
-        SetStatus("System picker is available in Unity Editor only. Paste a path in imagePathInput on this platform.");
-        return string.Empty;
-#endif
-    }
-
-        private void EnsureCreateProfileSceneUiRef()
-        {
         if (createProfileSceneUI == null)
             createProfileSceneUI = FindObjectOfType<CreateProfileSceneUI>();
-        }
+    }
+
+#if UNITY_EDITOR
+    private string TryOpenSystemPicker()
+    {
+        string[] filters = { "Image files", "png,jpg,jpeg", "All files", "*" };
+        return UnityEditor.EditorUtility.OpenFilePanelWithFilters("Select Avatar", "", filters);
+    }
+#endif
 
     private void SetStatus(string message)
     {
