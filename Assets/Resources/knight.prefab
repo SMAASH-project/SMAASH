@@ -316,7 +316,7 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 904
-  damage: 20
+  damage: 15
   isCountingDown: 0
   _IsAttacking: 0
 --- !u!212 &4602428209214862651
