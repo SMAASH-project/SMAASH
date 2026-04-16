@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -138,7 +137,9 @@ public class StatsClient : MonoBehaviour
         }
 
         string normalized = endpoint.StartsWith("/") ? endpoint : "/" + endpoint;
-        using var req = UnityWebRequest.Get($"{gameApiClient.BaseUrl}{normalized}");
+        string url = $"{gameApiClient.BaseUrl}{normalized}";
+        Debug.Log($"[StatsClient] GET {url}");
+        using var req = UnityWebRequest.Get(url);
         req.SetRequestHeader("Authorization", $"Bearer {token}");
         req.SetRequestHeader("Accept", "application/json");
 
@@ -146,6 +147,7 @@ public class StatsClient : MonoBehaviour
 
         bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode >= 200 && req.responseCode < 300;
         string body = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+        Debug.Log($"[StatsClient] Response {normalized} HTTP {req.responseCode} result={req.result} body={body}");
 
         if (!ok)
         {
@@ -156,6 +158,7 @@ public class StatsClient : MonoBehaviour
 
         if (!JsonHelper.TryFromJsonArray(body, out T[] parsed))
         {
+            Debug.LogError($"[StatsClient] Parse failed for {normalized}. Raw body={body}");
             done?.Invoke(false, Array.Empty<T>(), "Failed to parse stats response.");
             yield break;
         }

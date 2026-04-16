@@ -57,6 +57,7 @@ public class CharacterManager : MonoBehaviour
         Load();
         ClampSelectionToAvailableCharacters();
         UpdateCharacter(selectedOption);
+        Save();
     }
 
     //Kovetkezo karakter
@@ -152,7 +153,7 @@ public class CharacterManager : MonoBehaviour
     //Lementi a karakter sorszamat
     private void Save()
     {
-        PlayerPrefs.SetInt("selectedOption", selectedOption);
+        PlayerPrefs.SetInt("selectedOption", GetCharacterDatabaseIndexForAvailableIndex(selectedOption));
         PlayerPrefs.SetString("character_name", nameText.text);
         PlayerPrefs.Save();
     }
@@ -240,22 +241,24 @@ public class CharacterManager : MonoBehaviour
         }
 
         int savedCharacterIndex = PlayerPrefs.GetInt("selectedOption", 0);
-        if (characterDatabase != null)
+        int mappedIndex = _availableCharacterIndices.IndexOf(savedCharacterIndex);
+        if (mappedIndex >= 0)
         {
-            Character savedCharacter = characterDatabase.GetCharacter(savedCharacterIndex);
-            if (savedCharacter != null)
-            {
-                int mappedIndex = _availableCharacterIndices.IndexOf(characterDatabase.GetCharacterIndexById(savedCharacter.character_id));
-                if (mappedIndex >= 0)
-                {
-                    selectedOption = mappedIndex;
-                    return;
-                }
-            }
+            selectedOption = mappedIndex;
+            return;
         }
 
         if (selectedOption < 0 || selectedOption >= _availableCharacterIndices.Count)
             selectedOption = 0;
+    }
+
+    private int GetCharacterDatabaseIndexForAvailableIndex(int availableIndex)
+    {
+        if (characterDatabase == null || characterDatabase.character == null || _availableCharacterIndices.Count == 0)
+            return 0;
+
+        int clampedIndex = Mathf.Clamp(availableIndex, 0, _availableCharacterIndices.Count - 1);
+        return _availableCharacterIndices[clampedIndex];
     }
 
     private int GetCharacterIdForAvailableIndex(int availableIndex)

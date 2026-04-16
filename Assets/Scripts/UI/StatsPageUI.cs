@@ -1,12 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class StatsPageUI : MonoBehaviour
 {
+    private static readonly Color SelectedButtonColor = new Color(0.78f, 0.78f, 0.78f, 1f);
+    private static readonly Color UnselectedButtonColor = Color.white;
+
     [Header("Services")]
     [SerializeField] private StatsClient statsClient;
 
@@ -35,9 +37,6 @@ public class StatsPageUI : MonoBehaviour
 
     [Header("Row Prefab")]
     [SerializeField] private StatsRowItemUI rowPrefab;
-
-    [Header("Status")]
-    [SerializeField] private TMP_Text statusText;
 
     private bool leaderboardLoaded;
     private bool activePlayersLoaded;
@@ -104,41 +103,36 @@ public class StatsPageUI : MonoBehaviour
     public void ShowLeaderboard()
     {
         ShowOnlyPanel(leaderboardPanel);
-
-        if (!leaderboardLoaded)
-            StartCoroutine(LoadLeaderboard());
+        SetSelectedButton(leaderboardButton);
+        StartCoroutine(LoadLeaderboard());
     }
 
     public void ShowActivePlayers()
     {
         ShowOnlyPanel(activePlayersPanel);
-
-        if (!activePlayersLoaded)
-            StartCoroutine(LoadActivePlayers());
+        SetSelectedButton(activePlayersButton);
+        StartCoroutine(LoadActivePlayers());
     }
 
     public void ShowPopularItems()
     {
         ShowOnlyPanel(popularItemsPanel);
-
-        if (!popularItemsLoaded)
-            StartCoroutine(LoadPopularItems());
+        SetSelectedButton(popularItemsButton);
+        StartCoroutine(LoadPopularItems());
     }
 
     public void ShowPlayedLevels()
     {
         ShowOnlyPanel(playedLevelsPanel);
-
-        if (!playedLevelsLoaded)
-            StartCoroutine(LoadPlayedLevels());
+        SetSelectedButton(playedLevelsButton);
+        StartCoroutine(LoadPlayedLevels());
     }
 
     public void ShowFavouriteCharacters()
     {
         ShowOnlyPanel(favouriteCharactersPanel);
-
-        if (!favouriteCharactersLoaded)
-            StartCoroutine(LoadFavouriteCharacters());
+        SetSelectedButton(favouriteCharactersButton);
+        StartCoroutine(LoadFavouriteCharacters());
     }
 
     public void RefreshCurrentTab()
@@ -208,7 +202,6 @@ public class StatsPageUI : MonoBehaviour
             return new RowData
             {
                 Title = d.display_name,
-                Subtitle = "Top by wins",
                 Metric = $"Wins: {d.Wins}"
             };
         });
@@ -248,7 +241,6 @@ public class StatsPageUI : MonoBehaviour
             return new RowData
             {
                 Title = d.display_name,
-                Subtitle = "Most matches played",
                 Metric = $"Matches: {d.Matches}"
             };
         });
@@ -288,7 +280,6 @@ public class StatsPageUI : MonoBehaviour
             return new RowData
             {
                 Title = d.Title,
-                Subtitle = "Store popularity",
                 Metric = $"Purchases: {d.Purchases}"
             };
         });
@@ -328,7 +319,6 @@ public class StatsPageUI : MonoBehaviour
             return new RowData
             {
                 Title = d.name,
-                Subtitle = "Most played maps",
                 Metric = $"Plays: {d.Plays}"
             };
         });
@@ -368,7 +358,6 @@ public class StatsPageUI : MonoBehaviour
             return new RowData
             {
                 Title = d.name,
-                Subtitle = "Your most used characters",
                 Metric = $"Plays: {d.Plays}"
             };
         });
@@ -391,6 +380,23 @@ public class StatsPageUI : MonoBehaviour
     {
         if (panel != null)
             panel.SetActive(isActive);
+    }
+
+    private void SetSelectedButton(Button selectedButton)
+    {
+        SetButtonColor(leaderboardButton, leaderboardButton == selectedButton);
+        SetButtonColor(activePlayersButton, activePlayersButton == selectedButton);
+        SetButtonColor(popularItemsButton, popularItemsButton == selectedButton);
+        SetButtonColor(playedLevelsButton, playedLevelsButton == selectedButton);
+        SetButtonColor(favouriteCharactersButton, favouriteCharactersButton == selectedButton);
+    }
+
+    private void SetButtonColor(Button button, bool isSelected)
+    {
+        if (button == null || button.image == null)
+            return;
+
+        button.image.color = isSelected ? SelectedButtonColor : UnselectedButtonColor;
     }
 
     private void ClearList(Transform root)
@@ -417,15 +423,12 @@ public class StatsPageUI : MonoBehaviour
         {
             var row = Instantiate(rowPrefab, root);
             var data = make(i);
-            row.Bind(i + 1, data.Title, data.Subtitle, data.Metric, data.Icon);
+            row.Bind(i + 1, data.Title, data.Metric);
         }
     }
 
     private void SetStatus(string message)
     {
-        if (statusText != null)
-            statusText.text = message;
-
         Debug.Log(message);
     }
 
@@ -448,9 +451,7 @@ public class StatsPageUI : MonoBehaviour
     private struct RowData
     {
         public string Title;
-        public string Subtitle;
         public string Metric;
-        public Sprite Icon;
     }
 
     [Serializable]

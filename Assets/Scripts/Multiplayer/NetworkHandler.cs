@@ -53,6 +53,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private Vector2Int winCoinRange = new Vector2Int(25, 60);
     [SerializeField] private Vector2Int loseCoinRange = new Vector2Int(5, 20);
 
+    private const string SelectedProfileCoinsKey = "selected_profile_coins";
+
     [Header("Spawn Points")]
     [SerializeField] private string player1SpawnPointName = "Player1_SpawnPoint";
     [SerializeField] private string player2SpawnPointName = "Player2_SpawnPoint";
@@ -77,6 +79,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     private bool _isDisposing = false;
     private bool _isEndingMatch = false;
     private string _matchStartedAt = string.Empty;
+    private string _currentMatchSessionId = string.Empty;
 
     public struct MatchEndUiData
     {
@@ -305,7 +308,10 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             });
 
             _matchStartedAt = FormatApiUtcNow();
+            _currentMatchSessionId = Guid.NewGuid().ToString();
             _isEndingMatch = false;
+
+            Debug.Log($"[NetworkHandler] New match session id: {_currentMatchSessionId}");
         }
         catch (Exception ex)
         {
@@ -343,6 +349,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         string networkStatus = _lastGameMode == GameMode.Single ? "offline" : "online";
         bool isWin = localResult == "win";
         int awardedCoinAmount = GetAwardedCoinAmount(isWin);
+        ApplyAwardedCoinsLocally(awardedCoinAmount);
 
         OnLocalMatchEnded?.Invoke(new MatchEndUiData
         {
@@ -422,6 +429,9 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     private string ResolveSessionId()
     {
+        if (!string.IsNullOrWhiteSpace(_currentMatchSessionId))
+            return _currentMatchSessionId;
+
         string photonSessionName = string.Empty;
 
         if (_runner != null && _runner.SessionInfo.IsValid)
@@ -466,6 +476,22 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         }
 
         return selectedIndex + 1;
+    }
+
+    private void ApplyAwardedCoinsLocally(int awardedCoinAmount)
+    {
+        if (awardedCoinAmount <= 0)
+            return;
+
+        long currentCoins = 0;
+        string cachedCoins = PlayerPrefs.GetString(SelectedProfileCoinsKey, "0");
+        long.TryParse(cachedCoins, out currentCoins);
+
+        long updatedCoins = currentCoins + awardedCoinAmount;
+        PlayerPrefs.SetString(SelectedProfileCoinsKey, updatedCoins.ToString());
+        PlayerPrefs.Save();
+
+        Debug.Log($"[MATCH POST] Local coin cache updated: {currentCoins} + {awardedCoinAmount} = {updatedCoins}");
     }
 
     private async Task ShutdownAndDestroyAsync()
@@ -656,7 +682,16 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     #endregion
 
     #region Required Interface Callbacks
-    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { /* Despawn logic */ }
+    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
+    {
+        Debug.Log($"[NetworkHandler] Player left: {player}");
+
+        if (!string.IsNullOrWhiteSpace(_matchStartedAt))
+        {
+            _isEndingMatch = true;
+            Debug.Log("[NetworkHandler] Match-end exit enabled because a player left after match start.");
+        }
+    }
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
     
     public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
@@ -664,20 +699,26 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         Debug.Log($"[NetworkHandler] Shutdown - Reason: {shutdownReason}");
         _isConnecting = false;
         _sceneLoadRequested = false;
-        _isEndingMatch = false;
         if (_runner == runner) _runner = null;
     }
     
-    public void OnConnectedToServer(NetworkRunner runner) 
-    { 
+    public void OnConnectedToServer(NetworkRunner runner)
+    {
         Debug.Log("[NetworkHandler] Connected to server");
         _isConnecting = false;
+    }
+
+    public void OnConnectedToServer(NetworkRunner runner, NetAddress peers)
+    {
+        OnConnectedToServer(runner);
     }
     
     public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
     {
         Debug.LogWarning($"[NetworkHandler] Disconnected from server: {reason}");
         _isConnecting = false;
+        if (!string.IsNullOrWhiteSpace(_matchStartedAt))
+            _isEndingMatch = true;
     }
     
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { request.Accept(); }
