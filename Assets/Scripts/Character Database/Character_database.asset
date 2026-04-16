@@ -29,7 +29,7 @@ MonoBehaviour:
     playerPrefab:
       RawGuidValue: 25e49451f5ce647f8a27cdc74010214f
   - character_id: 4
-    characterSprite: {fileID: 21300000, guid: 70d58050802f247b0ac91e67d7b9356e, type: 2}
+    characterSprite: {fileID: 21300000, guid: 74b07156194d441c398877fd14dabbd2, type: 2}
     character_name: Bandit
     playerPrefab:
       RawGuidValue: 1d9ffaa1844024a0aad1fdad94c0489a

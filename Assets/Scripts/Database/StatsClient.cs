@@ -63,14 +63,14 @@ public class FavouriteCharacterStatDto
 
 public class StatsClient : MonoBehaviour
 {
-    [SerializeField] private AuthClient authClient;
+    [SerializeField] private global::GameApiClent gameApiClient;
 
     private const string SelectedProfileKey = "selected_profile_id";
 
     private void Awake()
     {
-        if (authClient == null)
-            authClient = FindObjectOfType<AuthClient>();
+        if (gameApiClient == null)
+            gameApiClient = FindObjectOfType<global::GameApiClent>();
     }
 
     public IEnumerator GetLeaderboard(Action<bool, BestPlayerStatDto[], string> done)
@@ -118,16 +118,16 @@ public class StatsClient : MonoBehaviour
 
     private IEnumerator GetArray<T>(string endpoint, Action<bool, T[], string> done)
     {
-        if (authClient == null)
-            authClient = FindObjectOfType<AuthClient>();
+        if (gameApiClient == null)
+            gameApiClient = FindObjectOfType<global::GameApiClent>();
 
-        if (authClient == null)
+        if (gameApiClient == null)
         {
-            done?.Invoke(false, Array.Empty<T>(), "AuthClient missing.");
+            done?.Invoke(false, Array.Empty<T>(), "GameApiClent missing.");
             yield break;
         }
 
-        string token = authClient.AccessToken;
+        string token = gameApiClient.AccessToken;
         if (string.IsNullOrWhiteSpace(token))
             token = PlayerPrefs.GetString("access_token", "");
 
@@ -138,7 +138,7 @@ public class StatsClient : MonoBehaviour
         }
 
         string normalized = endpoint.StartsWith("/") ? endpoint : "/" + endpoint;
-        using var req = UnityWebRequest.Get($"{authClient.BaseUrl}{normalized}");
+        using var req = UnityWebRequest.Get($"{gameApiClient.BaseUrl}{normalized}");
         req.SetRequestHeader("Authorization", $"Bearer {token}");
         req.SetRequestHeader("Accept", "application/json");
 
@@ -154,47 +154,12 @@ public class StatsClient : MonoBehaviour
             yield break;
         }
 
-        if (!TryParseArray(body, out T[] parsed))
+        if (!JsonHelper.TryFromJsonArray(body, out T[] parsed))
         {
             done?.Invoke(false, Array.Empty<T>(), "Failed to parse stats response.");
             yield break;
         }
 
         done?.Invoke(true, parsed, string.Empty);
-    }
-
-    private bool TryParseArray<T>(string rawJson, out T[] result)
-    {
-        result = Array.Empty<T>();
-
-        if (string.IsNullOrWhiteSpace(rawJson) || string.Equals(rawJson, "null", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        try
-        {
-            string trimmed = rawJson.Trim();
-
-            if (trimmed.StartsWith("["))
-            {
-                result = JsonHelper.FromJsonArray<T>(trimmed) ?? Array.Empty<T>();
-                return true;
-            }
-
-            // Fallback: support {"items":[...]} shape.
-            var wrapped = JsonUtility.FromJson<ArrayWrapper<T>>(trimmed);
-            result = wrapped != null && wrapped.items != null ? wrapped.items : Array.Empty<T>();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"StatsClient parse error: {ex.Message}. Body={rawJson}");
-            return false;
-        }
-    }
-
-    [Serializable]
-    private class ArrayWrapper<T>
-    {
-        public T[] items;
     }
 }

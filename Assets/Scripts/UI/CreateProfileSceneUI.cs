@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class CreateProfileSceneUI : MonoBehaviour
 {
-    [SerializeField] private AuthClient authClient;
+    [SerializeField] private GameApiClent gameApiClient;
     [SerializeField] private TMP_InputField profileNameInput;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Image avatarPreview;
@@ -17,13 +17,13 @@ public class CreateProfileSceneUI : MonoBehaviour
 
     private void Start()
     {
-        if (authClient == null)
-            authClient = FindObjectOfType<AuthClient>();
+        if (gameApiClient == null)
+            gameApiClient = FindObjectOfType<GameApiClent>();
 
-        if (authClient == null)
+        if (gameApiClient == null)
         {
-            SetStatus("AuthClient not found.");
-            Debug.LogError("CreateProfileSceneUI: AuthClient missing.");
+            SetStatus("GameApiClent not found.");
+            Debug.LogError("CreateProfileSceneUI: GameApiClent missing.");
             return;
         }
 
@@ -33,7 +33,7 @@ public class CreateProfileSceneUI : MonoBehaviour
 
     public void OnCreateProfileClicked()
     {
-        if (authClient == null)
+        if (gameApiClient == null)
         {
             SetStatus("Auth client unavailable.");
             return;
@@ -116,7 +116,7 @@ public class CreateProfileSceneUI : MonoBehaviour
         string createMsg = string.Empty;
         PlayerProfileDto createdProfile = null;
 
-        yield return authClient.CreateProfile(displayName, (ok, msg, profile) =>
+        yield return gameApiClient.CreateProfile(displayName, (ok, msg, profile) =>
         {
             createDone = true;
             createSuccess = ok;
@@ -150,7 +150,7 @@ public class CreateProfileSceneUI : MonoBehaviour
         bool uploadSuccess = false;
         string uploadMsg = string.Empty;
 
-        yield return authClient.UploadProfilePicture(createdProfile.id, pngData, $"profile_{createdProfile.id}.png", (ok, msg) =>
+        yield return gameApiClient.UploadProfilePicture(createdProfile.id, pngData, $"profile_{createdProfile.id}.png", (ok, msg) =>
         {
             uploadDone = true;
             uploadSuccess = ok;

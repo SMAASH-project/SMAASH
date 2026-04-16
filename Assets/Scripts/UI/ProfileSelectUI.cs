@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public class ProfileSelectUI : MonoBehaviour
 {
-    [SerializeField] private AuthClient authClient;
+    [SerializeField] private GameApiClent gameApiClient;
     [SerializeField] private Transform listRoot;
     [SerializeField] private Button profileButtonPrefab;
     [SerializeField] private TMP_Text statusText;
@@ -19,16 +19,16 @@ public class ProfileSelectUI : MonoBehaviour
 
     private void Start()
     {
-        if (authClient == null)
-            authClient = FindObjectOfType<AuthClient>();
+        if (gameApiClient == null)
+            gameApiClient = FindObjectOfType<GameApiClent>();
 
         if (statusText == null)
             Debug.LogWarning("ProfileSelectUI: statusText is not assigned.");
 
-        if (authClient == null)
+        if (gameApiClient == null)
         {
-            SetStatus("AuthClient not found.");
-            Debug.LogError("ProfileSelectUI: AuthClient missing.");
+            SetStatus("GameApiClent not found.");
+            Debug.LogError("ProfileSelectUI: GameApiClent missing.");
             return;
         }
 
@@ -56,7 +56,7 @@ public class ProfileSelectUI : MonoBehaviour
         SetStatus("Checking profiles...");
         SetAddProfileButtonVisible(true);
 
-        StartCoroutine(authClient.GetMyProfiles((success, profiles) =>
+        StartCoroutine(gameApiClient.GetMyProfiles((success, profiles) =>
         {
             if (!success)
             {
@@ -87,11 +87,11 @@ public class ProfileSelectUI : MonoBehaviour
                 if (label != null)
                     label.text = $"{p.display_name}\nCoins: {p.coins}";
 
-                var pfpUri = $"{authClient.BaseUrl}/api/profiles/{p.id}/pfp"; // /api/profiles/{id}/pfp
+                var pfpUri = $"{gameApiClient.BaseUrl}/api/profiles/{p.id}/pfp"; // /api/profiles/{id}/pfp
                 TrySetProfileAvatar(btn, pfpUri);
 
                 // Main profile selection
-                btn.onClick.AddListener(() => authClient.SelectProfile(p));
+                btn.onClick.AddListener(() => gameApiClient.SelectProfile(p));
 
                 // Find DeleteButton (sibling, not child)
                 var deleteBtn = btn.transform.Find("DeleteButton")?.GetComponent<Button>();
@@ -178,8 +178,8 @@ public class ProfileSelectUI : MonoBehaviour
     {
         using var request = UnityWebRequestTexture.GetTexture(uri); 
 
-        var token = authClient != null ? authClient.AccessToken : string.Empty;
-        // Fallback to PlayerPrefs if token is not available in authClient
+        var token = gameApiClient != null ? gameApiClient.AccessToken : string.Empty;
+        // Fallback to PlayerPrefs if token is not available in gameApiClient
         if (string.IsNullOrWhiteSpace(token))
             token = PlayerPrefs.GetString("access_token", "");
         
@@ -246,9 +246,9 @@ public class ProfileSelectUI : MonoBehaviour
 
     private void FindLogOutButton()
     {
-        if (authClient == null)
+        if (gameApiClient == null)
         {
-            Debug.LogError("Cannot setup logout button: authClient is null");
+            Debug.LogError("Cannot setup logout button: gameApiClient is null");
             return;
         }
         
@@ -257,7 +257,7 @@ public class ProfileSelectUI : MonoBehaviour
         if (logoutBtn != null)
         {
             logoutBtn.onClick.RemoveAllListeners();
-            logoutBtn.onClick.AddListener(() => authClient.Logout());
+            logoutBtn.onClick.AddListener(() => gameApiClient.Logout());
             Debug.Log("Logout button successfully registered");
         }
         else
@@ -280,7 +280,7 @@ public class ProfileSelectUI : MonoBehaviour
 
         SetStatus($"Deleting '{profile.display_name}'...");
 
-        StartCoroutine(authClient.DeleteProfile(profile.id, (success, message) =>
+        StartCoroutine(gameApiClient.DeleteProfile(profile.id, (success, message) =>
         {
             if (success)
             {

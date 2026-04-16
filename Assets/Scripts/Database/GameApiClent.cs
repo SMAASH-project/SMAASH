@@ -5,7 +5,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 // ── DTOs ──
 [Serializable] public class GameLoginRequest { public string email; public string password; }
@@ -45,7 +44,26 @@ using UnityEngine.UI;
 
 [Serializable] public class PlayerProfileListResponse { public PlayerProfileDto[] profiles; }
 
-public class AuthClient : MonoBehaviour
+[Serializable]
+public class BackendCharacterDto
+{
+    public int id;
+    public string name;
+    public string description;
+    public int price;
+    public string rarity;
+    public string[] categories;
+    public string img_uri;
+}
+
+[Serializable]
+public class PurchaseCreateDto
+{
+    public int player_profile_id;
+    public int character_id;
+}
+
+public class GameApiClent : MonoBehaviour
 {
     [Header("API")]
     [SerializeField] private bool useLocalhost = false;
@@ -57,7 +75,7 @@ public class AuthClient : MonoBehaviour
     [SerializeField] private string loginScene = "sc_login";
     [SerializeField] private bool clearPrefsOnStartForTesting = false;
 
-    private static AuthClient _instance;
+    private static GameApiClent _instance;
 
     public string AccessToken { get; private set; }
     public string BaseUrl => (useLocalhost ? localhostUrl : deployedUrl).TrimEnd('/');
@@ -73,6 +91,7 @@ public class AuthClient : MonoBehaviour
     private const string AccessKey = "access_token";
     private const string RefreshKey = "refresh_token";
     private const string SelectedProfileKey = "selected_profile_id";
+    private const string SelectedProfileCoinsKey = "selected_profile_coins";
     private const string DisplayNameKey = "display_name";
 
     private void Awake()
@@ -83,7 +102,7 @@ public class AuthClient : MonoBehaviour
             // and keep this instance (with fresh UI refs from the scene)
             if (SceneManager.GetActiveScene().name == loginScene)
             {
-                Debug.LogWarning("AuthClient instance being re-created on login scene. Destroying old DontDestroyOnLoad instance.");
+                Debug.LogWarning("GameApiClent instance being re-created on login scene. Destroying old DontDestroyOnLoad instance.");
                 Destroy(_instance.gameObject);
                 _instance = this;
                 DontDestroyOnLoad(gameObject);
@@ -93,7 +112,7 @@ public class AuthClient : MonoBehaviour
             }
 
             // For other scenes, keep the existing singleton
-            Debug.LogWarning("Multiple AuthClient instances detected. Destroying duplicate.");
+            Debug.LogWarning("Multiple GameApiClent instances detected. Destroying duplicate.");
             Destroy(gameObject);
             return;
         }
@@ -104,7 +123,7 @@ public class AuthClient : MonoBehaviour
         // Debug: Show active backend
         string activeBackend = useLocalhost ? "LOCALHOST" : "DEPLOYED";
         string activeUrl = BaseUrl;
-        Debug.Log($"[AuthClient] Backend: {activeBackend} → {activeUrl}");
+        Debug.Log($"[GameApiClent] Backend: {activeBackend} → {activeUrl}");
         
         RestoreAccessTokenFromPrefs();
         StartCoroutine(TryAutoLogin());
@@ -417,8 +436,7 @@ public class AuthClient : MonoBehaviour
     {
         try
         {
-            var response = JsonUtility.FromJson<PlayerProfileCreateResponseDto>(createMsg);
-            if (response != null)
+            if (JsonHelper.TryFromJsonObject<PlayerProfileCreateResponseDto>(createMsg, out var response) && response != null)
             {
                 return new PlayerProfileDto
                 {
@@ -470,7 +488,13 @@ public class AuthClient : MonoBehaviour
             yield break;
         }
 
-        var resp = JsonUtility.FromJson<RefreshResponseDto>(req.downloadHandler.text);
+        if (!JsonHelper.TryFromJsonObject<RefreshResponseDto>(req.downloadHandler.text, out var resp) || resp == null)
+        {
+            ClearTokens();
+            done?.Invoke(false);
+            yield break;
+        }
+
         SaveTokens(resp.accessToken, resp.refreshToken);
         done?.Invoke(true);
     }
@@ -558,24 +582,105 @@ public class AuthClient : MonoBehaviour
         done(true, profiles);
     }
 
+    // ──────────────────────────────────────────────
+    // CHARACTERS
+    // ──────────────────────────────────────────────
+
+    public IEnumerator GetAvailableCharacters(Action<bool, BackendCharacterDto[], string> done)
+    {
+        yield return GetAuthorizedArray("/api/characters", done);
+    }
+
+    public IEnumerator GetProfileCharacters(int profileId, Action<bool, BackendCharacterDto[], string> done)
+    {
+        if (profileId <= 0)
+        {
+            done?.Invoke(false, Array.Empty<BackendCharacterDto>(), "Invalid profile id.");
+            yield break;
+        }
+
+        yield return GetAuthorizedArray($"/api/profiles/{profileId}/characters", done);
+    }
+
+    public IEnumerator PurchaseCharacter(int profileId, int characterId, Action<bool, string> done)
+    {
+        if (profileId <= 0)
+        {
+            done?.Invoke(false, "Invalid profile id.");
+            yield break;
+        }
+
+        if (characterId <= 0)
+        {
+            done?.Invoke(false, "Invalid character id.");
+            yield break;
+        }
+
+        var payload = new PurchaseCreateDto
+        {
+            player_profile_id = profileId,
+            character_id = characterId
+        };
+
+        yield return PostAuthorizedJson("/api/purchases", payload, done);
+    }
+
+    private IEnumerator GetAuthorizedArray<T>(string endpoint, Action<bool, T[], string> done)
+    {
+        string token = AccessToken;
+        if (string.IsNullOrWhiteSpace(token))
+            token = PlayerPrefs.GetString(AccessKey, "");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            done?.Invoke(false, Array.Empty<T>(), "Missing access token.");
+            yield break;
+        }
+
+        string normalizedEndpoint = endpoint.StartsWith("/") ? endpoint : "/" + endpoint;
+        using var req = UnityWebRequest.Get($"{BaseUrl}{normalizedEndpoint}");
+        req.SetRequestHeader("Authorization", $"Bearer {token}");
+        req.SetRequestHeader("Accept", "application/json");
+
+        yield return req.SendWebRequest();
+
+        bool ok = req.result == UnityWebRequest.Result.Success && req.responseCode >= 200 && req.responseCode < 300;
+        string body = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+
+        if (!ok)
+        {
+            string message = string.IsNullOrWhiteSpace(body) ? $"HTTP {req.responseCode}" : body;
+            done?.Invoke(false, Array.Empty<T>(), message);
+            yield break;
+        }
+
+        if (!JsonHelper.TryFromJsonArray(body, out T[] parsed))
+        {
+            done?.Invoke(false, Array.Empty<T>(), "Failed to parse response.");
+            yield break;
+        }
+
+        done?.Invoke(true, parsed, string.Empty);
+    }
+
+    // ──────────────────────────────────────────────
+    // UTILITIES
+    // ──────────────────────────────────────────────
+
     private bool TryParseProfilesJson(string rawJson, out PlayerProfileDto[] profiles)
     {
         profiles = Array.Empty<PlayerProfileDto>();
 
-        if (string.IsNullOrWhiteSpace(rawJson) || string.Equals(rawJson, "null", StringComparison.OrdinalIgnoreCase))
-            return true;
-
         try
         {
-            if (rawJson.StartsWith("["))
+            if (JsonHelper.TryFromJsonArray<PlayerProfileDto>(rawJson, out var arrayProfiles))
             {
-                profiles = JsonHelper.FromJsonArray<PlayerProfileDto>(rawJson) ?? Array.Empty<PlayerProfileDto>();
+                profiles = arrayProfiles;
                 return true;
             }
 
-            if (rawJson.StartsWith("{"))
+            if (JsonHelper.TryFromJsonObject<PlayerProfileListResponse>(rawJson, out var response) && response != null)
             {
-                var response = JsonUtility.FromJson<PlayerProfileListResponse>(rawJson);
                 profiles = response?.profiles ?? Array.Empty<PlayerProfileDto>();
                 return true;
             }
@@ -593,6 +698,7 @@ public class AuthClient : MonoBehaviour
     public void SelectProfile(PlayerProfileDto profile)
     {
         PlayerPrefs.SetInt(SelectedProfileKey, profile.id);
+        PlayerPrefs.SetString(SelectedProfileCoinsKey, profile.coins.ToString());
         PlayerPrefs.SetString(DisplayNameKey, profile.display_name);
         PlayerPrefs.Save();
         SceneManager.LoadScene(loadingSceneName);
@@ -613,9 +719,9 @@ public class AuthClient : MonoBehaviour
         string normalizedEndpoint = endpoint.StartsWith("/") ? endpoint : "/" + endpoint;
         string json = JsonUtility.ToJson(payload);
 
-    Debug.Log($"[AUTH POST] POST {BaseUrl}{normalizedEndpoint}");
-    Debug.Log($"[AUTH POST] Authorization header present={(!string.IsNullOrWhiteSpace(token))}, tokenLength={(token != null ? token.Length : 0)}");
-    Debug.Log($"[AUTH POST] Request JSON: {json}");
+        Debug.Log($"[AUTH POST] POST {BaseUrl}{normalizedEndpoint}");
+        Debug.Log($"[AUTH POST] Authorization header present={(!string.IsNullOrWhiteSpace(token))}, tokenLength={(token != null ? token.Length : 0)}");
+        Debug.Log($"[AUTH POST] Request JSON: {json}");
 
         using var req = new UnityWebRequest($"{BaseUrl}{normalizedEndpoint}", UnityWebRequest.kHttpVerbPOST);
         req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
@@ -650,9 +756,14 @@ public class AuthClient : MonoBehaviour
         try
         {
             var json = DecodeBase64Url(parts[1]);
-            var payload = JsonUtility.FromJson<GameJwtPayload>(json);
+            if (!JsonHelper.TryFromJsonObject<GameJwtPayload>(json, out var payload) || payload == null)
+            {
+                Debug.LogError("GetUserIdFromToken failed: invalid token payload JSON");
+                return -1;
+            }
+
             Debug.Log(json + " => sub=" + payload.sub + ", exp=" + payload.exp);
-            if (payload == null || payload.sub <= 0)
+            if (payload.sub <= 0)
             { 
                 Debug.LogError("GetUserIdFromToken failed: invalid token payload (missing or non-positive sub)");
                 return -1;
@@ -733,7 +844,8 @@ public class AuthClient : MonoBehaviour
         if (parts.Length < 2) return false;
         try
         {
-            var payload = JsonUtility.FromJson<JwtPayload>(DecodeBase64Url(parts[1]));
+            if (!JsonHelper.TryFromJsonObject<JwtPayload>(DecodeBase64Url(parts[1]), out var payload) || payload == null)
+                return false;
             return payload != null && payload.exp > DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
         catch { return false; }

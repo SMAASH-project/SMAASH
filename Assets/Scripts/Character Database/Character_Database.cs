@@ -20,4 +20,34 @@ public class Character_Database : ScriptableObject
     {
         return character[index];
     }
+
+    public Character GetCharacterById(int characterId)
+    {
+        if (character == null)
+            return null;
+
+        for (int i = 0; i < character.Length; i++)
+        {
+            var candidate = character[i];
+            if (candidate != null && candidate.character_id == characterId)
+                return candidate;
+        }
+
+        return null;
+    }
+
+    public int GetCharacterIndexById(int characterId)
+    {
+        if (character == null)
+            return -1;
+
+        for (int i = 0; i < character.Length; i++)
+        {
+            var candidate = character[i];
+            if (candidate != null && candidate.character_id == characterId)
+                return i;
+        }
+
+        return -1;
+    }
 }

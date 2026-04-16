@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,37 +17,58 @@ public class CharacterManager : MonoBehaviour
     
     private int selectedOption = 0;
     private string loadingScene = "sc_loading";
+    private readonly List<int> _availableCharacterIndices = new List<int>();
+    private bool _ownershipLoadedSuccessfully;
 
+    [SerializeField] private global::GameApiClent gameApiClient;
     [SerializeField] private NetworkHandler networkHandler;
     // Start is called before the first frame update
     
     //Lementett karakter kivalasztasa
-    void Start()
+    IEnumerator Start()
     {
+        if (gameApiClient == null)
+            gameApiClient = FindObjectOfType<global::GameApiClent>();
+
         networkHandler = NetworkHandler.Instance != null
             ? NetworkHandler.Instance
             : FindObjectOfType<NetworkHandler>();
 
-        startButton.onClick.AddListener(changeToWaitingRoom);
-        if(!PlayerPrefs.HasKey("selectedOption"))
+        if (startButton != null)
         {
-            selectedOption = 0;
-        }else
-        {
-            Load();
+            startButton.onClick.RemoveAllListeners();
+            startButton.onClick.AddListener(changeToWaitingRoom);
         }
+
+        yield return LoadAvailableCharacters();
+
+        if (!_ownershipLoadedSuccessfully)
+        {
+            ShowUnavailableState("Unable to load owned characters.");
+            yield break;
+        }
+
+        if (_availableCharacterIndices.Count == 0)
+        {
+            ShowUnavailableState("No owned characters found.");
+            yield break;
+        }
+
+        Load();
+        ClampSelectionToAvailableCharacters();
         UpdateCharacter(selectedOption);
     }
 
     //Kovetkezo karakter
     public void NextOption()
     {
+        if (_availableCharacterIndices.Count == 0)
+            return;
+
         selectedOption++;
 
-        if(selectedOption >= characterDatabase.CharacterCount)
-        {
+        if(selectedOption >= _availableCharacterIndices.Count)
             selectedOption = 0;
-        }
 
         UpdateCharacter(selectedOption);
         Save();
@@ -55,12 +77,13 @@ public class CharacterManager : MonoBehaviour
     //Elozo karakter
     public void BackOption()
     {
+        if (_availableCharacterIndices.Count == 0)
+            return;
+
         selectedOption--;
 
         if(selectedOption < 0)
-        {
-            selectedOption = characterDatabase.CharacterCount - 1;
-        }
+            selectedOption = _availableCharacterIndices.Count - 1;
 
         UpdateCharacter(selectedOption);
         Save();
@@ -69,7 +92,15 @@ public class CharacterManager : MonoBehaviour
     //Megjelenik a kepernyon a kivalasztott karakter
     private void UpdateCharacter(int selectedOption)
     {
-        Character character = characterDatabase.GetCharacter(selectedOption);
+        if (_availableCharacterIndices.Count == 0 || characterDatabase == null)
+            return;
+
+        int characterIndex = _availableCharacterIndices[Mathf.Clamp(selectedOption, 0, _availableCharacterIndices.Count - 1)];
+        Character character = characterDatabase.GetCharacter(characterIndex);
+
+        if (character == null)
+            return;
+
         artworkSprite.sprite = character.characterSprite;
         ApplyArtworkPlacement(character);
         nameText.text = character.character_name;
@@ -116,7 +147,7 @@ public class CharacterManager : MonoBehaviour
     //Lekerdezi a karakter sorszamat
     private void Load()
     {
-        selectedOption = PlayerPrefs.GetInt("selectedOption");
+        selectedOption = PlayerPrefs.GetInt("selectedOption", 0);
     }
     //Lementi a karakter sorszamat
     private void Save()
@@ -143,6 +174,99 @@ public class CharacterManager : MonoBehaviour
         }
 
         networkHandler.RoomCreateAndJoin();
+    }
+
+    private IEnumerator LoadAvailableCharacters()
+    {
+        _availableCharacterIndices.Clear();
+        _ownershipLoadedSuccessfully = false;
+
+        if (gameApiClient == null)
+            yield break;
+
+        int profileId = PlayerPrefs.GetInt("selected_profile_id", -1);
+        if (profileId <= 0)
+            yield break;
+
+        bool done = false;
+        bool success = false;
+        BackendCharacterDto[] ownedCharacters = null;
+
+        yield return StartCoroutine(gameApiClient.GetProfileCharacters(profileId, (ok, result, error) =>
+        {
+            success = ok;
+            ownedCharacters = result;
+            done = true;
+        }));
+
+        if (!done || !success || ownedCharacters == null)
+            yield break;
+
+        _ownershipLoadedSuccessfully = true;
+
+        foreach (var ownedCharacter in ownedCharacters)
+        {
+            if (ownedCharacter == null)
+                continue;
+
+            int index = characterDatabase.GetCharacterIndexById(ownedCharacter.id);
+            if (index >= 0 && !_availableCharacterIndices.Contains(index))
+                _availableCharacterIndices.Add(index);
+        }
+
+        _availableCharacterIndices.Sort();
+    }
+
+    private void ShowUnavailableState(string message)
+    {
+        if (nameText != null)
+            nameText.text = message;
+
+        if (artworkSprite != null)
+            artworkSprite.sprite = null;
+
+        if (startButton != null)
+            startButton.interactable = false;
+
+        Debug.LogWarning($"[CharacterManager] {message}");
+    }
+
+    private void ClampSelectionToAvailableCharacters()
+    {
+        if (_availableCharacterIndices.Count == 0)
+        {
+            selectedOption = 0;
+            return;
+        }
+
+        int savedCharacterIndex = PlayerPrefs.GetInt("selectedOption", 0);
+        if (characterDatabase != null)
+        {
+            Character savedCharacter = characterDatabase.GetCharacter(savedCharacterIndex);
+            if (savedCharacter != null)
+            {
+                int mappedIndex = _availableCharacterIndices.IndexOf(characterDatabase.GetCharacterIndexById(savedCharacter.character_id));
+                if (mappedIndex >= 0)
+                {
+                    selectedOption = mappedIndex;
+                    return;
+                }
+            }
+        }
+
+        if (selectedOption < 0 || selectedOption >= _availableCharacterIndices.Count)
+            selectedOption = 0;
+    }
+
+    private int GetCharacterIdForAvailableIndex(int availableIndex)
+    {
+        if (characterDatabase == null || characterDatabase.character == null || _availableCharacterIndices.Count == 0)
+            return -1;
+
+        int clampedIndex = Mathf.Clamp(availableIndex, 0, _availableCharacterIndices.Count - 1);
+        int characterIndex = _availableCharacterIndices[clampedIndex];
+        Character character = characterDatabase.GetCharacter(characterIndex);
+        return character != null ? character.character_id : -1;
     }
 
 }

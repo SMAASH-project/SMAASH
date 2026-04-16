@@ -45,7 +45,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string _lobbySceneName = "sc_lobby";
     [SerializeField] private string _loginSceneName = "sc_login";
     [Header("Match Result API")]
-    [SerializeField] private AuthClient authClient;
+    [SerializeField] private GameApiClent gameApiClient;
     [SerializeField] private string matchResultEndpoint = "/api/matches";
     [SerializeField] private int levelId = 1;
 
@@ -330,8 +330,8 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
     private IEnumerator PostMatchResultAndReturnToLobby(int deadPlayerId)
     {
-        if (authClient == null)
-            authClient = FindObjectOfType<AuthClient>();
+        if (gameApiClient == null)
+            gameApiClient = FindObjectOfType<GameApiClent>();
 
         string startedAt = string.IsNullOrWhiteSpace(_matchStartedAt)
             ? FormatApiUtcNow()
@@ -373,13 +373,13 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         if (payload.participation.player_id <= 0)
             Debug.LogWarning("[MATCH POST] selected_profile_id is missing or invalid. Match post is likely to fail.");
 
-        if (authClient != null)
+        if (gameApiClient != null)
         {
             bool done = false;
             bool success = false;
             string response = string.Empty;
 
-            yield return StartCoroutine(authClient.PostAuthorizedJson(matchResultEndpoint, payload, (ok, body) =>
+            yield return StartCoroutine(gameApiClient.PostAuthorizedJson(matchResultEndpoint, payload, (ok, body) =>
             {
                 success = ok;
                 response = body;
@@ -393,7 +393,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         }
         else
         {
-            Debug.LogWarning("[MATCH POST] AuthClient not found. Skipping match result post.");
+            Debug.LogWarning("[MATCH POST] GameApiClent not found. Skipping match result post.");
         }
     }
 
