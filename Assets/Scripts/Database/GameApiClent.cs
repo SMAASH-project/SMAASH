@@ -13,6 +13,7 @@ using UnityEngine.SceneManagement;
 [Serializable] public class RefreshResponseDto { public string accessToken; public string refreshToken; }
 [Serializable] public class JwtPayload { public long exp; }
 [Serializable] public class GameJwtPayload { public long exp; public float sub; }
+[Serializable] public class ApiErrorMessageDto { public string message; public string error; public string detail; }
 
 [Serializable] public class PlayerProfileDto
 {
@@ -120,6 +121,12 @@ public class GameApiClent : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         
+        // Disable native OS mobile keyboard for login inputs
+        if (emailInput != null)
+            emailInput.shouldHideMobileInput = true;
+        if (passwordInput != null)
+            passwordInput.shouldHideMobileInput = true;
+        
         // Debug: Show active backend
         string activeBackend = useLocalhost ? "LOCALHOST" : "DEPLOYED";
         string activeUrl = BaseUrl;
@@ -152,15 +159,65 @@ public class GameApiClent : MonoBehaviour
 
     public void OnLoginButtonClicked()
     {
-        StartCoroutine(Login(emailInput.text, passwordInput.text, (success, msg) =>
+        string email = emailInput != null ? emailInput.text : string.Empty;
+        string password = passwordInput != null ? passwordInput.text : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            if (statusText != null)
+            {
+                statusText.text = "Email and password cannot be empty.";
+                statusText.color = Color.red;
+            }
+            return;
+        }
+
+        if (!email.Contains("@"))
+        {
+            if (statusText != null)
+            {
+                statusText.text = "Please enter a valid email address.";
+                statusText.color = Color.red;
+            }
+            return;
+        }
+
+        if (password.Length < 8)
+        {
+            if (statusText != null)
+            {
+                statusText.text = "Password must be at least 8 characters long.";
+                statusText.color = Color.red;
+            }
+            return;
+        }
+
+        if (statusText != null)
+        {
+            statusText.text = "Logging in...";
+            statusText.color = Color.white;
+        }
+
+        StartCoroutine(Login(email, password, (success, msg) =>
         {
             if (success)
             {
+                if (statusText != null)
+                {
+                    statusText.text = "Login successful!";
+                    statusText.color = Color.green;
+                }
                 Debug.Log("Login successful!");
                 SceneManager.LoadScene(profileSelectScene);
             }
             else
             {
+                string conciseError = SimplifyAuthError(msg, isLogin: true);
+                if (statusText != null)
+                {
+                    statusText.text = conciseError;
+                    statusText.color = Color.red;
+                }
                 Debug.LogError($"Login failed: {msg}");
             }
         }));
@@ -214,7 +271,46 @@ public class GameApiClent : MonoBehaviour
 
     public void OnSignUpButtonClicked()
     {
-        StartCoroutine(SignUp(emailInput.text, passwordInput.text, (success, msg) =>
+        string email = emailInput != null ? emailInput.text : string.Empty;
+        string password = passwordInput != null ? passwordInput.text : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            if (statusText != null)
+            {
+                statusText.text = "Email and password cannot be empty.";
+                statusText.color = Color.red;
+            }
+            return;
+        }
+
+        if (!email.Contains("@"))
+        {
+            if (statusText != null)
+            {
+                statusText.text = "Please enter a valid email address.";
+                statusText.color = Color.red;
+            }
+            return;
+        }
+
+        if (password.Length < 8)
+        {
+            if (statusText != null)
+            {
+                statusText.text = "Password must be at least 8 characters long.";
+                statusText.color = Color.red;
+            }
+            return;
+        }
+
+        if (statusText != null)
+        {
+            statusText.text = "Creating account...";
+            statusText.color = Color.white;
+        }
+
+        StartCoroutine(SignUp(email, password, (success, msg) =>
         {
             if (success)
             {
@@ -230,15 +326,84 @@ public class GameApiClent : MonoBehaviour
             }
             else
             {
+                string conciseError = SimplifyAuthError(msg, isLogin: false);
                 Debug.LogError($"Signup failed: {msg}");
                 if (statusText != null)
                 {
-                    statusText.text = $"Signup failed: {msg}";
+                    statusText.text = conciseError;
                     statusText.color = Color.red;
                 }
             }
         }));
     } 
+
+    private static string SimplifyAuthError(string rawError, bool isLogin)
+    {
+        string fallback = isLogin ? "Login failed. Please try again." : "Signup failed. Please try again.";
+        if (string.IsNullOrWhiteSpace(rawError))
+            return fallback;
+
+        string candidate = rawError.Trim();
+
+        if (TryExtractErrorMessage(candidate, out string extracted))
+            candidate = extracted;
+
+        string lower = candidate.ToLowerInvariant();
+
+        if (lower.Contains("user not found") || lower.Contains("does not exist") || lower.Contains("not exist"))
+            return "User not found.";
+
+        if (lower.Contains("invalid credentials") ||
+            lower.Contains("invalid email") ||
+            lower.Contains("incorrect password") ||
+            lower.Contains("wrong password") ||
+            lower.Contains("unauthorized"))
+            return "Invalid email or password.";
+
+        if (!isLogin && (lower.Contains("already exists") || lower.Contains("already in use") || lower.Contains("duplicate")))
+            return "Email is already in use.";
+
+        return fallback;
+    }
+
+    private static bool TryExtractErrorMessage(string rawError, out string message)
+    {
+        message = string.Empty;
+        if (string.IsNullOrWhiteSpace(rawError))
+            return false;
+
+        string trimmed = rawError.Trim();
+        if (!trimmed.StartsWith("{") || !trimmed.EndsWith("}"))
+            return false;
+
+        try
+        {
+            var payload = JsonUtility.FromJson<ApiErrorMessageDto>(trimmed);
+            if (!string.IsNullOrWhiteSpace(payload?.message))
+            {
+                message = payload.message;
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(payload?.error))
+            {
+                message = payload.error;
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(payload?.detail))
+            {
+                message = payload.detail;
+                return true;
+            }
+        }
+        catch
+        {
+            // Ignore parse errors and keep fallback behavior.
+        }
+
+        return false;
+    }
 
     private IEnumerator SignUp(string email, string password, Action<bool, string> done)
     {

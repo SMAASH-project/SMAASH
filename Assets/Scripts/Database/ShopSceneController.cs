@@ -50,11 +50,23 @@ public class ShopSceneController : MonoBehaviour
         RegisterCard("BanditContainer");
         RegisterCard("KnightContainer");
 
+        // Disable all buy buttons during initial load
+        DisableAllBuyButtons();
+
         var backButton = GameObject.Find("BackButton")?.GetComponent<Button>();
         if (backButton != null)
         {
             backButton.onClick.RemoveAllListeners();
             backButton.onClick.AddListener(() => SceneManager.LoadScene(lobbySceneName));
+        }
+    }
+
+    private void DisableAllBuyButtons()
+    {
+        foreach (var card in _cardsByCharacterId.Values)
+        {
+            if (card.BuyButton != null)
+                card.BuyButton.interactable = false;
         }
     }
 
@@ -282,11 +294,16 @@ public class ShopSceneController : MonoBehaviour
             return;
         }
 
+        // Disable all buttons during purchase to prevent double-clicks
+        DisableAllBuyButtons();
+
         StartCoroutine(gameApiClient.PurchaseCharacter(profileId, characterId, (success, response) =>
         {
             if (!success)
             {
                 Debug.LogWarning($"[ShopSceneController] {(string.IsNullOrWhiteSpace(response) ? "Purchase failed." : response)}");
+                // Re-enable buttons on failure
+                StartCoroutine(LoadShopData());
                 return;
             }
 
@@ -294,6 +311,7 @@ public class ShopSceneController : MonoBehaviour
             PlayerPrefs.Save();
 
             Debug.Log("[ShopSceneController] Purchase successful.");
+            // Reload shop data to refresh coins and re-enable buttons
             StartCoroutine(LoadShopData());
         }));
     }

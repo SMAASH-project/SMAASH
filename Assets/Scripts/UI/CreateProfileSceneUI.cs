@@ -20,6 +20,9 @@ public class CreateProfileSceneUI : MonoBehaviour
         if (gameApiClient == null)
             gameApiClient = FindObjectOfType<GameApiClent>();
 
+        if (profileNameInput != null)
+            profileNameInput.shouldHideMobileInput = true;
+
         if (gameApiClient == null)
         {
             SetStatus("GameApiClent not found.");

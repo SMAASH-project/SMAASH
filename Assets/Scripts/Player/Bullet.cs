@@ -13,6 +13,7 @@ public class Bullet : NetworkBehaviour
     private int damage = 20;
     private Vector2 direction = Vector2.right;
     private float spawnTime;
+    private PlayerRef owner;
 
     public override void Spawned()
     {
@@ -43,9 +44,17 @@ public class Bullet : NetworkBehaviour
         transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
 
+    public void SetOwner(PlayerRef ownerRef)
+    {
+        owner = ownerRef;
+    }
+
     void OnTriggerEnter2D(Collider2D collision)
     {
         Debug.Log("Bullet hit: " + collision.gameObject.name);
+
+        if (Object == null || !Object.HasStateAuthority)
+            return;
 
         if (IsGroundLayer(collision.gameObject.layer))
         {
@@ -54,8 +63,12 @@ public class Bullet : NetworkBehaviour
         }
 
         // Send damage request to the health script
-        if (collision.TryGetComponent<PlayerHealth>(out var health))
+        var health = collision.GetComponentInParent<PlayerHealth>();
+        if (health != null)
         {
+            if (health.Object != null && health.Object.InputAuthority == owner)
+                return;
+
             health.TakeDamageCaller(damage);
 
             DespawnBullet();

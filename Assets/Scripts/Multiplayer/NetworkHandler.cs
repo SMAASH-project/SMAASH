@@ -554,10 +554,16 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             createInput = GameObject.Find("Create_input")?.GetComponent<TMP_InputField>();
         }
 
+        if (createInput != null)
+            createInput.shouldHideMobileInput = true;
+
         if (joinInput == null)
         {
             joinInput = GameObject.Find("Join_input")?.GetComponent<TMP_InputField>();
         }
+
+        if (joinInput != null)
+            joinInput.shouldHideMobileInput = true;
     }
 
     // --- INPUT BRIDGE ---

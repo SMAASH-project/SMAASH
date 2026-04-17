@@ -18,6 +18,8 @@ public class PlayerHealth : NetworkBehaviour
     private int CurrentHealth { get; set; }
 
     [Networked] public bool isDead { get; set; }
+    [Networked, OnChangedRender(nameof(OnDisplayNameChanged))]
+    private NetworkString<_32> DisplayName { get; set; }
 
     private HealthBar myUIBar;
 
@@ -40,6 +42,14 @@ public class PlayerHealth : NetworkBehaviour
             CurrentHealth = maxHealth;
             isDead = false;
         }
+
+        if (Object.HasInputAuthority)
+        {
+            string localDisplayName = PlayerPrefs.GetString("display_name", "Player");
+            RPC_SubmitDisplayName(localDisplayName);
+        }
+
+        ApplyDisplayNameToUi();
 
         // Initialize the UI immediately
         UpdateVisuals();
@@ -119,6 +129,12 @@ public class PlayerHealth : NetworkBehaviour
         UpdateVisuals();
     }
 
+    // Fusion 2 call whenever DisplayName changes over the network
+    public void OnDisplayNameChanged()
+    {
+        ApplyDisplayNameToUi();
+    }
+
     private void UpdateVisuals()
     {
         if (myUIBar != null)
@@ -126,5 +142,30 @@ public class PlayerHealth : NetworkBehaviour
             myUIBar.SetMaxHealth(maxHealth);
             myUIBar.SetHealth(CurrentHealth);
         }
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    private void RPC_SubmitDisplayName(string playerDisplayName)
+    {
+        string safeName = string.IsNullOrWhiteSpace(playerDisplayName) ? "Player" : playerDisplayName.Trim();
+        if (safeName.Length > 32)
+            safeName = safeName.Substring(0, 32);
+
+        DisplayName = safeName;
+    }
+
+    private void ApplyDisplayNameToUi()
+    {
+        if (myUIBar == null)
+            return;
+
+        string nameToShow = DisplayName.ToString();
+        if (string.IsNullOrWhiteSpace(nameToShow) && Object.HasInputAuthority)
+            nameToShow = PlayerPrefs.GetString("display_name", "Player");
+
+        if (string.IsNullOrWhiteSpace(nameToShow))
+            nameToShow = "Player";
+
+        myUIBar.SetPlayerName(nameToShow);
     }
 }

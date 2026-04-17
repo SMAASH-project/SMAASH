@@ -53,11 +53,25 @@ public class ShootingAttack : NetworkBehaviour
         // Determine which attack point to use based on sprite direction
         bool facingLeft = playerMovement != null ? playerMovement.IsFacingLeft : spriteRenderer != null && spriteRenderer.flipX;
         Transform activePoint = facingLeft ? attackPointOpposite : attackPoint;
+        Vector3 spawnPosition = GetSpawnPosition(activePoint);
         
         // Send RPC to server to spawn bullet
-        SpawnBulletRpc(activePoint.position, activePoint.rotation, facingLeft);
+        SpawnBulletRpc(spawnPosition, activePoint.rotation, facingLeft);
 
         StartCoroutine(AttackCooldown());
+    }
+
+    private Vector3 GetSpawnPosition(Transform activePoint)
+    {
+        if (activePoint == null)
+            return transform.position;
+
+        Vector3 position = activePoint.position;
+
+        if (attackPoint != null)
+            position.y = attackPoint.position.y;
+
+        return position;
     }
 
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
@@ -72,6 +86,7 @@ public class ShootingAttack : NetworkBehaviour
 
             if (bullet != null)
             {
+                bullet.SetOwner(Object.InputAuthority);
                 Vector2 fireDirection = facingLeft ? Vector2.left : Vector2.right;
                 bullet.SetDirection(fireDirection);
             }

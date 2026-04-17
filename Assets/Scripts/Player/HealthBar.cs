@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class HealthBar : MonoBehaviour
 {
     public Slider slider;
     public Gradient gradient;
     public Image fill;
+    public TMP_Text playerNameText;
 
     // We no longer need [Networked] properties here because 
     // the PlayerHealth script will provide the data.
@@ -27,6 +29,12 @@ public class HealthBar : MonoBehaviour
             slider.value = health;
         }
         UpdateColor();
+    }
+
+    public void SetPlayerName(string playerName)
+    {
+        if (playerNameText != null)
+            playerNameText.text = playerName;
     }
 
     private void UpdateColor()
