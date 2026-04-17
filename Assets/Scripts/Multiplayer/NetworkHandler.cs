@@ -154,6 +154,13 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         SceneManager.LoadScene(_characterSelectSceneName);
     }
 
+    public void SelectCharacterForQuickMatch()
+    {
+        _pendingCharacterSelectMode = GameMode.AutoHostOrClient;
+        _pendingRoomName = string.Empty;
+        SceneManager.LoadScene(_characterSelectSceneName);
+    }
+
     public void RoomCreateAndJoin()
     {
         if (_pendingCharacterSelectMode == GameMode.Single)
@@ -173,6 +180,13 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
         // Wait for the scene to load
         yield return null;
         yield return null;
+
+        if (_pendingCharacterSelectMode == GameMode.AutoHostOrClient)
+        {
+            Debug.Log("[NetworkHandler] Quick match: join random session or create if none found.");
+            StartGame(GameMode.AutoHostOrClient, string.Empty);
+            yield break;
+        }
         
         string roomName = string.IsNullOrWhiteSpace(_pendingRoomName) ? "DefaultRoom" : _pendingRoomName;
 
@@ -280,7 +294,9 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
 
         _isConnecting = true;
         _lastGameMode = mode;
-        _lastRoomName = string.IsNullOrWhiteSpace(roomName) ? "DefaultRoom" : roomName.Trim();
+        _lastRoomName = mode == GameMode.AutoHostOrClient
+            ? roomName?.Trim() ?? string.Empty
+            : (string.IsNullOrWhiteSpace(roomName) ? "DefaultRoom" : roomName.Trim());
 
         try
         {
@@ -302,7 +318,7 @@ public class NetworkHandler : MonoBehaviour, INetworkRunnerCallbacks
             await _runner.StartGame(new StartGameArgs
             {
                 GameMode = mode,
-                SessionName = _lastRoomName,
+                SessionName = string.IsNullOrWhiteSpace(_lastRoomName) ? null : _lastRoomName,
                 PlayerCount = mode == GameMode.Single ? 1 : 2,
                 SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
             });

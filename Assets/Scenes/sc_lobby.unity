@@ -2737,9 +2737,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CreateAndJoinRooms, Assembly-CSharp
-        m_MethodName: QuickMatch
+      - m_Target: {fileID: 858253547}
+        m_TargetAssemblyTypeName: NetworkHandler, Assembly-CSharp
+        m_MethodName: SelectCharacterForQuickMatch
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

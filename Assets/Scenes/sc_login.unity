@@ -354,7 +354,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useLocalhost: 0
   localhostUrl: http://localhost:8080
-  deployedUrl: https://smaash-web-backend.onrender.com
+  deployedUrl: https://smaash-web.onrender.com
   profileSelectScene: sc_profile_select
   loadingSceneName: sc_loading
   loginScene: sc_login
